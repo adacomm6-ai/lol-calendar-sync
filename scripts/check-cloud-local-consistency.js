@@ -11,14 +11,23 @@ const LOCAL_DB_PATH = path.join(ROOT_DIR, 'prisma', 'dev.db');
 
 const TABLES = [
   'Team',
+  'UserProfile',
+  'SystemSettings',
   'Player',
   'Match',
   'Game',
   'Comment',
   'TeamComment',
   'Odds',
+  'ManualOddsRecord',
   'Hero',
   'GameVersionRule',
+  'PlayerStatSnapshot',
+  'PlayerRankAccount',
+  'PlayerRankAccountAlias',
+  'PlayerRankSnapshot',
+  'PlayerRankRecentSummary',
+  'PlayerRankProfileCache',
 ];
 
 function resolveCloudUrl() {
@@ -51,7 +60,13 @@ function nowStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
+function localTableExists(db, table) {
+  const row = db.prepare('select name from sqlite_master where type = ? and name = ?').get('table', table);
+  return Boolean(row?.name);
+}
+
 function queryLocalCount(db, table) {
+  if (!localTableExists(db, table)) return 0;
   const row = db.prepare(`select count(*) as c from "${table}"`).get();
   return Number(row?.c || 0);
 }

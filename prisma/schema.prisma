@@ -19,6 +19,7 @@ model Team {
   matchesAsA   Match[]       @relation("TeamA")
   players      Player[]
   teamComments TeamComment[]
+  statSnapshots PlayerStatSnapshot[]
   rankAccounts PlayerRankAccount[]
   rankRecentSummaries PlayerRankRecentSummary[]
   rankProfileCaches PlayerRankProfileCache[]
@@ -34,6 +35,7 @@ model Player {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   team      Team     @relation(fields: [teamId], references: [id])
+  statSnapshots PlayerStatSnapshot[]
   rankAccounts PlayerRankAccount[]
   rankSnapshots PlayerRankSnapshot[]
   rankRecentSummaries PlayerRankRecentSummary[]
@@ -185,6 +187,89 @@ model Hero {
   avatarUrl String
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+}
+
+model PlayerStatSnapshot {
+  id                       String    @id @default(uuid())
+  sourceKey                String    @unique
+  playerId                 String?
+  teamId                   String?
+  league                   String
+  seasonYear               String
+  splitName                String?
+  tournamentName           String
+  role                     String
+  playerName               String
+  normalizedPlayerName     String
+  teamName                 String
+  teamShortName            String?
+  source                   String
+  sourceUrl                String?
+  dateFrom                 DateTime?
+  dateTo                   DateTime?
+  games                    Int       @default(0)
+  wins                     Int       @default(0)
+  losses                   Int       @default(0)
+  winRatePct               Float?
+  kda                      Float?
+  avgKills                 Float?
+  avgDeaths                Float?
+  avgAssists               Float?
+  csPerMin                 Float?
+  goldPerMin               Float?
+  killParticipationPct     Float?
+  damageSharePct           Float?
+  goldSharePct             Float?
+  visionSharePct           Float?
+  damagePerMin             Float?
+  visionScorePerMin        Float?
+  wardsPerMin              Float?
+  wardsClearedPerMin       Float?
+  visionWardsPerMin        Float?
+  goldDiffAt15             Float?
+  csDiffAt15               Float?
+  xpDiffAt15               Float?
+  firstBloodParticipationPct Float?
+  firstBloodVictimPct      Float?
+  currentRecentGames       Int       @default(0)
+  currentTotalGames        Int       @default(0)
+  confidence               Float?
+  stateScore               Float?
+  masteryScore             Float?
+  laneScore                Float?
+  overallScore             Float?
+  relativeScore            Float?
+  relativeZScore           Float?
+  evaluationLabel          String?
+  trendScore               Float?
+  labelsJson               String?
+  insightsJson             String?
+  recentWinRatePct         Float?
+  careerWinRatePct         Float?
+  recentKda                Float?
+  careerKda                Float?
+  localGoldPerMin          Float?
+  localCsPerMin            Float?
+  localDamagePerMin        Float?
+  localDamageTakenPerMin   Float?
+  localKillParticipationPct Float?
+  localVisionPerMin        Float?
+  localScore               Float?
+  localExternalWinRatePct  Float?
+  mappedTeamName           String?
+  mappedRole               String?
+  sampleGames              Int?
+  mappingConfidence        Float?
+  extraJson                String?
+  syncedAt                 DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  player                   Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  team                     Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([league, seasonYear, tournamentName])
+  @@index([playerId])
+  @@index([teamId])
+  @@index([playerName, teamName])
 }
 
 model PlayerRankAccount {
