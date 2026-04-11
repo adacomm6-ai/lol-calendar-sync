@@ -23,6 +23,12 @@ function resolveLocalDatabaseUrl(): string {
     return raw;
   }
 
+  // Keep non-file DATABASE_URL values intact so cloud deployments use Postgres
+  // instead of incorrectly falling back to a local SQLite path.
+  if (raw) {
+    return raw;
+  }
+
   // When this app is launched from the recovery candidate under __recovery_work__,
   // prefer the workspace root database so the formal site always reads the current formal data.
   if (projectRoot.includes('__recovery_work__') && hasWorkspaceRootPrismaDb) {
