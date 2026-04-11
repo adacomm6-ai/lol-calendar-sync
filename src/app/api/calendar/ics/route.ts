@@ -5,5 +5,7 @@ import { handleCalendarIcsRequest } from '@/lib/calendar-ics';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  return handleCalendarIcsRequest(request);
+  return handleCalendarIcsRequest(request, {
+    defaultRegions: ['LPL', 'LCK'],
+  });
 }

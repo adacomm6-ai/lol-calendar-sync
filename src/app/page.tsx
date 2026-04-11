@@ -43,7 +43,7 @@ const TEXT = {
   toEntry: "前往赛程后台",
 };
 
-const HOME_CALENDAR_PATH = "/api/calendar/ics?status=upcoming";
+const HOME_CALENDAR_PATH = "/api/calendar/ics?status=upcoming&regions=LPL,LCK";
 
 function looksCorruptedDisplayText(value: string): boolean {
   const text = String(value || '').trim();

@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download latest calendar snapshot
-        run: curl -fsSL "https://lol-calendar-sync.vercel.app/calendar.ics" -o iphone-calendar.ics
+        run: curl -fsSL "https://lol-calendar-sync.vercel.app/calendar.ics?regions=LPL,LCK" -o iphone-calendar.ics
 
       - name: Commit updated snapshot
         run: |

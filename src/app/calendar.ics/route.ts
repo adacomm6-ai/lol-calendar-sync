@@ -8,5 +8,6 @@ export async function GET(request: NextRequest) {
   return handleCalendarIcsRequest(request, {
     defaultStatus: 'upcoming',
     defaultCalendarName: 'LOL赛程',
+    defaultRegions: ['LPL', 'LCK'],
   });
 }
