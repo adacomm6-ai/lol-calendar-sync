@@ -304,9 +304,12 @@ export async function handleCalendarIcsRequest(
     return new NextResponse(body, {
       status: 200,
       headers: {
-        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Type': download
+          ? 'application/octet-stream'
+          : 'text/calendar; charset=utf-8',
         'Content-Disposition': `${download ? 'attachment' : 'inline'}; filename="${encodeURIComponent(fileName)}"`,
         'Cache-Control': 'public, max-age=300, s-maxage=300',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error: any) {
