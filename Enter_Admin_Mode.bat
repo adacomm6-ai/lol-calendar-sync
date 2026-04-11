@@ -1,0 +1,3 @@
+@echo off
+echo Starting Client in Admin Mode...
+start http://localhost:3000/?admin=true

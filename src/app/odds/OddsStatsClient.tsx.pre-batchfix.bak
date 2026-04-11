@@ -1,0 +1,786 @@
+﻿
+'use client';
+
+import { confirmAction } from '@/lib/confirm-dialog';
+import { useEffect, useMemo, useState } from 'react';
+
+import TeamOddsSummaryCard from '@/components/analysis/TeamOddsSummaryCard';
+import {
+    buildTeamOddsSummary,
+    createMatchLookup,
+    formatSignedNumber,
+    formatWinRate,
+    getStatusFromResultValue,
+    loadAllStoredOdds,
+    loadStoredOddsForMatch,
+    persistStoredOdds,
+    type OddsMatchMeta,
+    type OddsType,
+    type StoredOddsResult,
+} from '@/lib/odds-history';
+import type { RegionConfig, SplitConfig } from '@/lib/config-service';
+
+interface TeamOption {
+    id: string;
+    name: string;
+    shortName?: string | null;
+    region?: string | null;
+    logo?: string | null;
+}
+
+interface OddsStatsClientProps {
+    teams: TeamOption[];
+    matches: OddsMatchMeta[];
+    regions: RegionConfig[];
+    years: string[];
+    splits: SplitConfig[];
+    selectedRegion: string;
+    selectedYear: string;
+    selectedSplit: string;
+}
+
+type HistoryFilterKey = 'ALL' | OddsType;
+type HistorySortKey = 'NEWEST' | 'OLDEST';
+
+const HISTORY_FILTER_OPTIONS: Array<{ key: HistoryFilterKey; label: string }> = [
+    { key: 'ALL', label: '全部' },
+    { key: 'WINNER', label: '胜负盘' },
+    { key: 'HANDICAP', label: '让分盘' },
+    { key: 'KILLS', label: '人头盘' },
+    { key: 'TIME', label: '时间盘' },
+];
+
+const HISTORY_PAGE_SIZE = 15;
+
+function StatCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+    return (
+        <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+            <div className="text-xs text-slate-400">{label}</div>
+            <div className="mt-2 text-3xl font-black text-white">{value}</div>
+            <div className="mt-1 text-xs text-slate-500">{helper}</div>
+        </div>
+    );
+}
+
+function EditIcon({ className = 'h-3.5 w-3.5' }: { className?: string }) {
+    return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" />
+        </svg>
+    );
+}
+
+function formatThreshold(value: number | null | undefined): string {
+    if (!Number.isFinite(value)) return '-';
+    const numeric = value as number;
+    return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(1);
+}
+
+function formatRecordTime(value?: string | null): string {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return new Intl.DateTimeFormat('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(date);
+}
+
+function formatMatchLabel(record: StoredOddsResult, matchMeta?: OddsMatchMeta): string {
+    const leftName = matchMeta?.teamAName || record.teamAName || '队伍A';
+    const rightName = matchMeta?.teamBName || record.teamBName || '队伍B';
+    return `${leftName} vs ${rightName}`;
+}
+
+function getRecordTypeLabel(record: StoredOddsResult): string {
+    if (record.type === 'WINNER') return '胜负盘';
+    if (record.type === 'HANDICAP') return '让分盘';
+    if (record.type === 'KILLS') return record.side === 'LEFT' ? '大人头' : '小人头';
+    return record.side === 'LEFT' ? '大时间' : '小时间';
+}
+
+function getSelectionLabel(record: StoredOddsResult): string {
+    if (record.selectionLabel?.trim()) return record.selectionLabel.trim();
+
+    if (record.type === 'WINNER') {
+        return record.side === 'LEFT' ? record.teamAName || '队伍A' : record.teamBName || '队伍B';
+    }
+
+    if (record.type === 'HANDICAP') {
+        const threshold = formatThreshold(record.threshold);
+        if (record.side === 'LEFT') {
+            return `${record.teamAName || '队伍A'} ${Number(record.threshold || 0) > 0 ? '+' : ''}${threshold}`;
+        }
+        const invert = Number(record.threshold || 0) * -1;
+        return `${record.teamBName || '队伍B'} ${invert > 0 ? '+' : ''}${formatThreshold(invert)}`;
+    }
+
+    if (record.type === 'KILLS') {
+        return record.side === 'LEFT' ? `大于 ${formatThreshold(record.threshold)}` : `小于 ${formatThreshold(record.threshold)}`;
+    }
+
+    return record.side === 'LEFT' ? `大于 ${formatThreshold(record.threshold)} 分钟` : `小于 ${formatThreshold(record.threshold)} 分钟`;
+}
+
+function isRecordBelongToTeam(record: StoredOddsResult, teamId: string): boolean {
+    if (record.type === 'WINNER' || record.type === 'HANDICAP') {
+        const selectedTeamId = record.side === 'LEFT' ? record.teamAId : record.teamBId;
+        return selectedTeamId === teamId;
+    }
+
+    return record.teamAId === teamId || record.teamBId === teamId;
+}
+
+function getRecordTimestampMs(record: StoredOddsResult, matchMeta?: OddsMatchMeta): number {
+    const candidate = matchMeta?.startTime || record.matchStartTime || record.createdAt;
+    const timestamp = new Date(candidate).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function getLocalDateKey(record: StoredOddsResult, matchMeta?: OddsMatchMeta): string {
+    const timestamp = getRecordTimestampMs(record, matchMeta);
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+export default function OddsStatsClient({
+    teams,
+    matches,
+    regions,
+    years,
+    splits,
+    selectedRegion,
+    selectedYear,
+    selectedSplit,
+}: OddsStatsClientProps) {
+    const [records, setRecords] = useState(() => loadAllStoredOdds());
+    const [search, setSearch] = useState('');
+    const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+    const [historyFilter, setHistoryFilter] = useState<HistoryFilterKey>('ALL');
+    const [historySort, setHistorySort] = useState<HistorySortKey>('NEWEST');
+    const [historyMatchId, setHistoryMatchId] = useState('ALL');
+    const [historyDateFrom, setHistoryDateFrom] = useState('');
+    const [historyDateTo, setHistoryDateTo] = useState('');
+    const [visibleHistoryCount, setVisibleHistoryCount] = useState(HISTORY_PAGE_SIZE);
+    const [editingRecordId, setEditingRecordId] = useState('');
+    const [editingResultValue, setEditingResultValue] = useState('');
+    const [editingDetail, setEditingDetail] = useState('');
+
+    useEffect(() => {
+        const reload = () => setRecords(loadAllStoredOdds());
+        reload();
+        window.addEventListener('storage', reload);
+        window.addEventListener('virtual-bets-updated', reload as EventListener);
+        return () => {
+            window.removeEventListener('storage', reload);
+            window.removeEventListener('virtual-bets-updated', reload as EventListener);
+        };
+    }, []);
+
+    const matchLookup = useMemo(() => createMatchLookup(matches), [matches]);
+    const filteredRecords = useMemo(() => records.filter((record) => matchLookup.has(record.matchId)), [records, matchLookup]);
+
+    const summaries = useMemo(() => {
+        return teams
+            .map((team) => buildTeamOddsSummary(filteredRecords, team, matchLookup))
+            .sort((a, b) => {
+                if (b.totalRecords !== a.totalRecords) return b.totalRecords - a.totalRecords;
+                if (b.overallTotal !== a.overallTotal) return b.overallTotal - a.overallTotal;
+                return a.teamName.localeCompare(b.teamName);
+            });
+    }, [filteredRecords, matchLookup, teams]);
+
+    const visibleSummaries = useMemo(() => {
+        const keyword = search.trim().toLowerCase();
+        if (!keyword) return summaries;
+        return summaries.filter((summary) => summary.teamName.toLowerCase().includes(keyword));
+    }, [search, summaries]);
+
+    useEffect(() => {
+        if (visibleSummaries.length === 0) {
+            setSelectedTeamId('');
+            return;
+        }
+
+        const stillVisible = visibleSummaries.some((summary) => summary.teamId === selectedTeamId);
+        if (stillVisible) return;
+
+        const firstWithRecords = visibleSummaries.find((summary) => summary.totalRecords > 0);
+        setSelectedTeamId((firstWithRecords || visibleSummaries[0]).teamId);
+    }, [selectedTeamId, visibleSummaries]);
+
+    const selectedSummary = visibleSummaries.find((summary) => summary.teamId === selectedTeamId) || visibleSummaries[0] || null;
+
+    const typeFilteredRecords = useMemo(() => {
+        if (!selectedSummary) return [];
+
+        const teamRecords = filteredRecords
+            .filter((record) => isRecordBelongToTeam(record, selectedSummary.teamId))
+            .sort((a, b) => {
+                const aTime = getRecordTimestampMs(a, matchLookup.get(a.matchId));
+                const bTime = getRecordTimestampMs(b, matchLookup.get(b.matchId));
+                return historySort === 'NEWEST' ? bTime - aTime : aTime - bTime;
+            });
+
+        if (historyFilter === 'ALL') return teamRecords;
+        return teamRecords.filter((record) => record.type === historyFilter);
+    }, [filteredRecords, historyFilter, historySort, matchLookup, selectedSummary]);
+
+    const historyMatchOptions = useMemo(() => {
+        const optionMap = new Map<string, { id: string; label: string; sortTime: number }>();
+        for (const record of typeFilteredRecords) {
+            if (optionMap.has(record.matchId)) continue;
+            const meta = matchLookup.get(record.matchId);
+            const label = `${formatMatchLabel(record, meta)} · ${formatRecordTime(meta?.startTime || record.matchStartTime || record.createdAt)}`;
+            optionMap.set(record.matchId, {
+                id: record.matchId,
+                label,
+                sortTime: getRecordTimestampMs(record, meta),
+            });
+        }
+
+        return Array.from(optionMap.values()).sort((a, b) => b.sortTime - a.sortTime);
+    }, [typeFilteredRecords, matchLookup]);
+
+    useEffect(() => {
+        if (historyMatchId === 'ALL') return;
+        if (historyMatchOptions.some((option) => option.id === historyMatchId)) return;
+        setHistoryMatchId('ALL');
+    }, [historyMatchId, historyMatchOptions]);
+
+    const filteredTeamRecords = useMemo(() => {
+        return typeFilteredRecords.filter((record) => {
+            if (historyMatchId !== 'ALL' && record.matchId !== historyMatchId) return false;
+
+            const meta = matchLookup.get(record.matchId);
+            const dateKey = getLocalDateKey(record, meta);
+            if (historyDateFrom && (!dateKey || dateKey < historyDateFrom)) return false;
+            if (historyDateTo && (!dateKey || dateKey > historyDateTo)) return false;
+
+            return true;
+        });
+    }, [typeFilteredRecords, historyMatchId, historyDateFrom, historyDateTo, matchLookup]);
+
+    const pagedTeamRecords = useMemo(() => {
+        return filteredTeamRecords.slice(0, visibleHistoryCount);
+    }, [filteredTeamRecords, visibleHistoryCount]);
+
+    const hasMoreHistory = pagedTeamRecords.length < filteredTeamRecords.length;
+
+    const teamsWithRecords = visibleSummaries.filter((summary) => summary.totalRecords > 0).length;
+    const totalSigned = visibleSummaries.reduce((sum, summary) => sum + summary.overallTotal, 0);
+    const totalMarkets = visibleSummaries.reduce((sum, summary) => sum + summary.totalRecords, 0);
+    const bestWinnerRate = visibleSummaries.reduce((best, summary) => {
+        const rate = summary.metrics.winner.winRate;
+        if (rate === null) return best;
+        return Math.max(best, rate);
+    }, 0);
+
+    const startEditRecord = (record: StoredOddsResult) => {
+        const resultText = Number.isFinite(record.resultValue) ? String(record.resultValue) : '';
+        setEditingRecordId(record.id);
+        setEditingResultValue(resultText);
+        setEditingDetail(record.detail || '');
+    };
+
+    const cancelEditRecord = () => {
+        setEditingRecordId('');
+        setEditingResultValue('');
+        setEditingDetail('');
+    };
+
+    const saveEditedRecord = () => {
+        if (!editingRecordId) return;
+
+        const targetRecord = records.find((record) => record.id === editingRecordId);
+        if (!targetRecord) {
+            cancelEditRecord();
+            return;
+        }
+
+        const normalizedResult = editingResultValue.trim();
+        const parsedResult = normalizedResult === '' ? undefined : Number.parseFloat(normalizedResult);
+        if (normalizedResult !== '' && !Number.isFinite(parsedResult)) {
+            alert('结果值必须是数字');
+            return;
+        }
+
+        const matchRecords = loadStoredOddsForMatch(targetRecord.matchId);
+        const recordIndex = matchRecords.findIndex((record) => record.id === editingRecordId);
+        if (recordIndex < 0) {
+            alert('没有找到要编辑的盘口记录');
+            cancelEditRecord();
+            return;
+        }
+
+        const nextRecords = [...matchRecords];
+        nextRecords[recordIndex] = {
+            ...nextRecords[recordIndex],
+            resultValue: parsedResult,
+            settledStatus: getStatusFromResultValue(parsedResult),
+            detail: editingDetail.trim(),
+        };
+
+        persistStoredOdds(targetRecord.matchId, nextRecords);
+        setRecords(loadAllStoredOdds());
+        cancelEditRecord();
+    };
+
+    const deleteRecord = async (record: StoredOddsResult) => {`r`n        const confirmed = await confirmAction({ title: '删除历史记录', message: '确定删除这条盘口历史记录吗？', tone: 'danger' });`r`n        if (!confirmed) return;
+
+        const matchRecords = loadStoredOddsForMatch(record.matchId);
+        const nextRecords = matchRecords.filter((item) => item.id !== record.id);
+        persistStoredOdds(record.matchId, nextRecords);
+        setRecords(loadAllStoredOdds());
+
+        if (editingRecordId === record.id) {
+            cancelEditRecord();
+        }
+    };
+
+    const resetHistoryFilters = () => {
+        setHistoryMatchId('ALL');
+        setHistoryDateFrom('');
+        setHistoryDateTo('');
+        setHistorySort('NEWEST');
+    };
+
+    useEffect(() => {
+        cancelEditRecord();
+        setVisibleHistoryCount(HISTORY_PAGE_SIZE);
+    }, [historyFilter, selectedTeamId]);
+
+    useEffect(() => {
+        setVisibleHistoryCount(HISTORY_PAGE_SIZE);
+    }, [historyMatchId, historyDateFrom, historyDateTo, historySort]);
+
+    return (
+        <div className="space-y-6">
+            <div className="glass rounded-3xl border border-white/10 p-6">
+                <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                    <div>
+                        <div className="text-[11px] font-black uppercase tracking-[0.24em] text-cyan-300">盘口统计中心</div>
+                        <h1 className="mt-2 text-3xl font-black tracking-tight text-white">按赛区与队伍查看盘口输赢、胜率与最近 3 个大场</h1>
+                        <p className="mt-2 max-w-3xl text-sm text-slate-400">
+                            这里统计的是你手动录入的盘口结果。页面按队伍维度拆开，不再按两队交手混算。
+                        </p>
+                    </div>
+
+                    <form method="get" className="grid grid-cols-1 gap-3 md:grid-cols-4 xl:min-w-[760px]">
+                        <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-400">赛区</label>
+                            <select name="region" defaultValue={selectedRegion} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:outline-none">
+                                {regions.map((region) => (
+                                    <option key={region.id} value={region.id}>
+                                        {region.id}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-400">赛季</label>
+                            <select name="year" defaultValue={selectedYear} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:outline-none">
+                                {years.map((year) => (
+                                    <option key={year} value={year}>
+                                        {year}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1 block text-xs font-bold text-slate-400">赛事</label>
+                            <select name="split" defaultValue={selectedSplit} className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2 text-sm text-white focus:outline-none">
+                                {splits
+                                    .filter((split) => !split.regions || split.regions.length === 0 || split.regions.includes(selectedRegion))
+                                    .map((split) => (
+                                        <option key={split.id} value={split.id}>
+                                            {split.name}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
+                        <div className="flex items-end">
+                            <button type="submit" className="h-[42px] w-full rounded-xl bg-cyan-500 text-sm font-black text-slate-950 transition-all hover:bg-cyan-400">
+                                刷新统计
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <StatCard label="队伍数量" value={String(visibleSummaries.length)} helper={`有记录队伍 ${teamsWithRecords}`} />
+                    <StatCard label="盘口记录" value={String(totalMarkets)} helper="当前筛选下的全部录入条目" />
+                    <StatCard label="总输赢" value={formatSignedNumber(totalSigned)} helper="所有队伍所有盘口累计" />
+                    <StatCard label="最佳胜负盘胜率" value={formatWinRate(bestWinnerRate || null)} helper="当前筛选下最高单队胜负盘胜率" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
+                <div className="glass rounded-3xl border border-white/10 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                        <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">队伍列表</div>
+                            <div className="mt-1 text-xs text-slate-400">点击队伍查看详细盘口统计</div>
+                        </div>
+                        <div className="text-xs text-slate-500">{visibleSummaries.length} 支</div>
+                    </div>
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="搜索队伍"
+                        className="mt-3 h-11 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-sm text-white placeholder:text-slate-500 focus:outline-none"
+                    />
+                    <div className="mt-3 max-h-[920px] space-y-2 overflow-y-auto pr-1">
+                        {visibleSummaries.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+                                当前筛选下没有盘口记录
+                            </div>
+                        ) : (
+                            visibleSummaries.map((summary) => {
+                                const active = summary.teamId === selectedTeamId;
+                                return (
+                                    <button
+                                        key={summary.teamId}
+                                        type="button"
+                                        onClick={() => setSelectedTeamId(summary.teamId)}
+                                        className={`w-full rounded-2xl border p-3 text-left transition-all ${
+                                            active
+                                                ? 'border-cyan-400/50 bg-cyan-500/10 shadow-lg shadow-cyan-950/30'
+                                                : 'border-white/10 bg-slate-950/40 hover:border-white/20 hover:bg-slate-900/60'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <div className="text-sm font-black text-white">{summary.teamName}</div>
+                                                <div className="mt-1 text-xs text-slate-500">盘口 {summary.totalRecords} · 大场 {summary.matchCount}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-lg font-black text-cyan-300">{formatSignedNumber(summary.overallTotal)}</div>
+                                                <div className="text-[11px] text-slate-500">胜负盘 {formatWinRate(summary.metrics.winner.winRate)}</div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    {selectedSummary ? (
+                        <TeamOddsSummaryCard
+                            summary={selectedSummary}
+                            subtitle="单队盘口统计：总输赢、胜率、最近 3 个大场结果。"
+                        />
+                    ) : (
+                        <div className="glass rounded-3xl border border-dashed border-white/10 px-6 py-20 text-center text-slate-500">
+                            当前筛选下还没有可展示的队伍盘口记录。
+                        </div>
+                    )}
+
+                    <div className="glass rounded-3xl border border-white/10 p-4">
+                        <div className="flex flex-col gap-3">
+                            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">历史详细记录</div>
+                                    <div className="mt-1 text-xs text-slate-400">
+                                        {selectedSummary
+                                            ? `当前队伍 ${selectedSummary.teamName} · 当前筛选 ${filteredTeamRecords.length} 条（总 ${typeFilteredRecords.length} 条）`
+                                            : '当前没有可编辑的盘口历史记录'}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {HISTORY_FILTER_OPTIONS.map((option) => {
+                                        const active = historyFilter === option.key;
+                                        return (
+                                            <button
+                                                key={option.key}
+                                                type="button"
+                                                onClick={() => setHistoryFilter(option.key)}
+                                                className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                    active
+                                                        ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-200'
+                                                        : 'border-white/10 bg-slate-900/70 text-slate-300 hover:border-white/20 hover:text-white'
+                                                }`}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_160px_150px_150px_auto]">
+                                <div>
+                                    <label className="mb-1 block text-[11px] font-bold text-slate-500">大场筛选</label>
+                                    <select
+                                        value={historyMatchId}
+                                        onChange={(event) => setHistoryMatchId(event.target.value)}
+                                        className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                                    >
+                                        <option value="ALL">全部大场</option>
+                                        {historyMatchOptions.map((option) => (
+                                            <option key={option.id} value={option.id}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-[11px] font-bold text-slate-500">日期开始</label>
+                                    <input
+                                        type="date"
+                                        value={historyDateFrom}
+                                        onChange={(event) => setHistoryDateFrom(event.target.value)}
+                                        className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-[11px] font-bold text-slate-500">日期结束</label>
+                                    <input
+                                        type="date"
+                                        value={historyDateTo}
+                                        onChange={(event) => setHistoryDateTo(event.target.value)}
+                                        className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-[11px] font-bold text-slate-500">排序</label>
+                                    <select
+                                        value={historySort}
+                                        onChange={(event) => setHistorySort(event.target.value as HistorySortKey)}
+                                        className="h-10 w-full rounded-xl border border-white/10 bg-slate-950/70 px-3 text-xs text-white focus:border-cyan-500 focus:outline-none"
+                                    >
+                                        <option value="NEWEST">日期从新到旧</option>
+                                        <option value="OLDEST">日期从旧到新</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-end">
+                                    <button
+                                        type="button"
+                                        onClick={resetHistoryFilters}
+                                        className="h-10 rounded-xl border border-white/10 bg-slate-900/70 px-4 text-xs font-bold text-slate-300 transition-all hover:border-white/20 hover:text-white"
+                                    >
+                                        清空筛选
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-3 overflow-x-auto">
+                            <table className="w-full min-w-[1180px] text-sm text-slate-200">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                                        <th className="px-3 py-3 text-left">时间</th>
+                                        <th className="px-3 py-3 text-left">对阵</th>
+                                        <th className="px-3 py-3 text-left">场次</th>
+                                        <th className="px-3 py-3 text-left">盘口</th>
+                                        <th className="px-3 py-3 text-left">选项</th>
+                                        <th className="px-3 py-3 text-left">结果值</th>
+                                        <th className="px-3 py-3 text-left">详细记录</th>
+                                        <th className="px-3 py-3 text-left">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredTeamRecords.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} className="px-3 py-12 text-center text-sm text-slate-500">
+                                                当前筛选下没有历史盘口记录
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        pagedTeamRecords.map((record) => {
+                                            const isEditing = editingRecordId === record.id;
+                                            const matchMeta = matchLookup.get(record.matchId);
+                                            const resultValue = Number.isFinite(record.resultValue) ? (record.resultValue as number) : null;
+                                            const resultClass =
+                                                resultValue === null
+                                                    ? 'text-slate-500'
+                                                    : resultValue > 0
+                                                      ? 'font-black text-emerald-300'
+                                                      : resultValue < 0
+                                                        ? 'font-black text-rose-300'
+                                                        : 'font-black text-amber-300';
+
+                                            return (
+                                                <tr key={record.id} className="border-b border-white/5 align-top hover:bg-white/[0.02]">
+                                                    <td className="px-3 py-3 text-xs text-slate-400">
+                                                        {formatRecordTime(matchMeta?.startTime || record.matchStartTime || record.createdAt)}
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        <div className="font-bold text-white">{formatMatchLabel(record, matchMeta)}</div>
+                                                        <div className="mt-1 text-[11px] text-slate-500">
+                                                            {(matchMeta?.tournament || record.tournament || '-')}
+                                                            {' · '}
+                                                            {(matchMeta?.stage || record.stage || '未标注阶段')}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 text-xs font-bold text-slate-300">Game {record.gameNumber}</td>
+                                                    <td className="px-3 py-3 text-xs font-bold text-cyan-300">{getRecordTypeLabel(record)}</td>
+                                                    <td className="max-w-[230px] px-3 py-3 text-xs text-slate-300">
+                                                        <div className="truncate" title={getSelectionLabel(record)}>
+                                                            {getSelectionLabel(record)}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        {isEditing ? (
+                                                            <input
+                                                                value={editingResultValue}
+                                                                onChange={(event) => setEditingResultValue(event.target.value)}
+                                                                placeholder="例如 -3000"
+                                                                className="h-9 w-[120px] rounded-lg border border-white/10 bg-slate-950 px-2 text-sm text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+                                                            />
+                                                        ) : (
+                                                            <div className={resultClass}>
+                                                                {resultValue === null ? '未录入' : formatSignedNumber(resultValue)}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="min-w-[300px] px-3 py-3">
+                                                        {isEditing ? (
+                                                            <textarea
+                                                                rows={2}
+                                                                value={editingDetail}
+                                                                onChange={(event) => setEditingDetail(event.target.value)}
+                                                                placeholder="补充这条盘口的详细说明（可选）"
+                                                                className="w-full resize-y rounded-lg border border-white/10 bg-slate-950 px-2 py-1.5 text-xs text-white placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+                                                            />
+                                                        ) : (
+                                                            <div className="max-w-[420px] whitespace-pre-wrap break-words text-xs text-slate-400">
+                                                                {record.detail?.trim() || '-'}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3">
+                                                        {isEditing ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={cancelEditRecord}
+                                                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-slate-800 text-sm font-black text-slate-300 transition-all hover:bg-slate-700 hover:text-white"
+                                                                    title="取消"
+                                                                    aria-label="取消"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={saveEditedRecord}
+                                                                    className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-500/15 text-sm font-black text-cyan-200 transition-all hover:bg-cyan-500/25"
+                                                                    title="保存"
+                                                                    aria-label="保存"
+                                                                >
+                                                                    √
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => deleteRecord(record)}
+                                                                    className="rounded-lg border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-xs font-bold text-rose-300 transition-all hover:bg-rose-500/20"
+                                                                >
+                                                                    删除
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => startEditRecord(record)}
+                                                                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-blue-600/90 text-white shadow-md shadow-blue-900/30 transition-all hover:bg-blue-500"
+                                                                title="编辑这条历史记录"
+                                                                aria-label="编辑这条历史记录"
+                                                            >
+                                                                <EditIcon className="h-3.5 w-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                            <div className="text-xs text-slate-500">
+                                已显示 {pagedTeamRecords.length} / {filteredTeamRecords.length} 条
+                            </div>
+                            {hasMoreHistory && (
+                                <button
+                                    type="button"
+                                    onClick={() => setVisibleHistoryCount((prev) => prev + HISTORY_PAGE_SIZE)}
+                                    className="h-9 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 text-xs font-black text-cyan-200 transition-all hover:bg-cyan-500/20"
+                                >
+                                    加载更多
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="glass rounded-3xl border border-white/10 p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                            <div>
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">赛区队伍总表</div>
+                                <div className="mt-1 text-xs text-slate-400">按队伍汇总各盘口的总输赢与胜率</div>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[1280px] text-sm text-slate-200">
+                                <thead>
+                                    <tr className="border-b border-white/10 text-[11px] uppercase tracking-[0.14em] text-slate-500">
+                                        <th className="px-3 py-3 text-left">队伍</th>
+                                        <th className="px-3 py-3 text-left">总输赢</th>
+                                        <th className="px-3 py-3 text-left">胜负盘</th>
+                                        <th className="px-3 py-3 text-left">让分盘</th>
+                                        <th className="px-3 py-3 text-left">人头总盘</th>
+                                        <th className="px-3 py-3 text-left">大人头</th>
+                                        <th className="px-3 py-3 text-left">小人头</th>
+                                        <th className="px-3 py-3 text-left">时间总盘</th>
+                                        <th className="px-3 py-3 text-left">大时间</th>
+                                        <th className="px-3 py-3 text-left">小时间</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {visibleSummaries.map((summary) => (
+                                        <tr key={`row-${summary.teamId}`} className="border-b border-white/5 align-top text-slate-300 hover:bg-white/[0.02]">
+                                            <td className="px-3 py-3">
+                                                <div className="font-black text-white">{summary.teamName}</div>
+                                                <div className="mt-1 text-xs text-slate-500">盘口 {summary.totalRecords} · 大场 {summary.matchCount}</div>
+                                            </td>
+                                            <td className="px-3 py-3 font-black text-cyan-300">{formatSignedNumber(summary.overallTotal)}</td>
+                                            {[
+                                                summary.metrics.winner,
+                                                summary.metrics.handicap,
+                                                summary.metrics.killsAll,
+                                                summary.metrics.killsOver,
+                                                summary.metrics.killsUnder,
+                                                summary.metrics.timeAll,
+                                                summary.metrics.timeOver,
+                                                summary.metrics.timeUnder,
+                                            ].map((metric) => (
+                                                <td key={`${summary.teamId}-${metric.key}`} className="px-3 py-3">
+                                                    <div className="font-black text-white">{formatSignedNumber(metric.total)}</div>
+                                                    <div className="mt-1 text-xs text-slate-400">胜率 {formatWinRate(metric.winRate)}</div>
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+

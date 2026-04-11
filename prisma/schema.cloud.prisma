@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Comment {
+  id         String   @id
+  matchId    String
+  gameNumber Int      @default(1)
+  content    String
+  author     String   @default("User")
+  type       String   @default("POST_MATCH")
+  createdAt  DateTime @default(now())
+  userId     String?
+  Match      Match    @relation(fields: [matchId], references: [id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Game {
+  id              String   @id
+  matchId         String
+  gameNumber      Int
+  winnerId        String?
+  duration        Int?
+  totalKills      Int?
+  blueKills       Int?
+  redKills        Int?
+  blueTenMinKills Int?
+  redTenMinKills  Int?
+  teamAStats      String?
+  teamBStats      String?
+  blueSideTeamId  String?
+  redSideTeamId   String?
+  screenshot      String?
+  screenshot2     String?
+  analysisData    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime
+  Match           Match    @relation(fields: [matchId], references: [id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Hero {
+  id        String   @id
+  name      String   @unique
+  alias     String?
+  title     String?
+  avatarUrl String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Match {
+  id                       String    @id
+  startTime                DateTime?
+  teamAId                  String?
+  teamBId                  String?
+  winnerId                 String?
+  status                   String    @default("SCHEDULED")
+  format                   String    @default("BO3")
+  tournament               String    @default("LPL")
+  stage                    String    @default("Regular Season")
+  gameVersion              String?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime
+  Comment                  Comment[]
+  Game                     Game[]
+  Team_Match_teamAIdToTeam Team?     @relation("Match_teamAIdToTeam", fields: [teamAId], references: [id])
+  Team_Match_teamBIdToTeam Team?     @relation("Match_teamBIdToTeam", fields: [teamBId], references: [id])
+  Odds                     Odds[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Odds {
+  id         String   @id
+  matchId    String
+  gameNumber Int      @default(1)
+  provider   String
+  type       String   @default("WINNER")
+  threshold  Float?
+  teamAOdds  Float
+  teamBOdds  Float
+  timestamp  DateTime @default(now())
+  Match      Match    @relation(fields: [matchId], references: [id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Player {
+  id        String   @id
+  name      String
+  role      String
+  split     String   @default("Split 1")
+  teamId    String
+  photo     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Team      Team     @relation(fields: [teamId], references: [id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model Team {
+  id                        String        @id
+  name                      String        @unique
+  shortName                 String?
+  region                    String
+  logo                      String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime
+  Match_Match_teamAIdToTeam Match[]       @relation("Match_teamAIdToTeam")
+  Match_Match_teamBIdToTeam Match[]       @relation("Match_teamBIdToTeam")
+  Player                    Player[]
+  TeamComment               TeamComment[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model TeamComment {
+  id        String   @id
+  teamId    String
+  content   String
+  author    String   @default("User")
+  createdAt DateTime @default(now())
+  userId    String?
+  Team      Team     @relation(fields: [teamId], references: [id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model UserProfile {
+  id        String   @id
+  name      String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model SystemSettings {
+  id        String   @id @default("global")
+  data      String
+  updatedAt DateTime
+}
+
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model GameVersionRule {
+  id            String   @id @default(uuid())
+  region        String
+  version       String
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+}
+
+
+

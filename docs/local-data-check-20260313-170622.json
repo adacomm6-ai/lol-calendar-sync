@@ -1,0 +1,22 @@
+{
+  "checkedAt": "2026-03-13T09:06:22.971Z",
+  "dbPath": "D:\\LoL数据网页\\prisma\\dev.db",
+  "tableCounts": {
+    "Team": 131,
+    "Player": 705,
+    "Match": 306,
+    "Game": 718,
+    "Comment": 360,
+    "TeamComment": 24,
+    "Odds": 1211,
+    "Hero": 172,
+    "GameVersionRule": 7
+  },
+  "checks": {
+    "unknown_players": 0,
+    "finished_missing_winner": 0,
+    "finished_missing_games": 0,
+    "matches_missing_gameVersion": 0
+  },
+  "pass": true
+}

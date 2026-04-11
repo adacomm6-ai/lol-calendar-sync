@@ -1,0 +1,12 @@
+Row 1: ["日期","主队","比分","客队","赛前数据","赛后结果","BP详情",null,"胜方","小结","赛前数据","赛后结果","BP详情",null,"胜方队伍2","小结","赛前数据","赛后结果","BP详情",null,"胜方队伍3","小结","赛前数据","赛后结果","BP详情",null,"胜方队伍3","小结","赛前数据","赛后结果","BP详情",null,"胜方队伍3","小结"]
+Row 2: [46017,"IG","3:1","TES",null,"蓝TES-红IG\n时间35:29\n10分钟 1:2=3\n总人头31:26=57","TES","IG","TES",null,null,"蓝IG-红TES\n时间26:20\n10分钟 3:2=5\n总人头27:10=37","IG","TES","IG",null,null,"蓝TES-红IG\n时间35:27\n10分钟 2:3=5\n总人头19:14=33","TES","IG","IG",null,null,"蓝IG-红TES\n时间27:09\n10分钟 3:6=9\n总人头21:11=32","IG","TES","IG"]
+Skipped (Exists): IG vs TES
+Row 3: [null,null,null,null,null,null,"塞恩\n琪亚娜\n发条\n烬\n日女","挖掘机\n猴子\n安妮\n韦鲁斯\n芮尔",null,null,null,null,"奎桑提\n潘森\n蛇女\n卡莎\n妮蔻","亚恒\n赵信\n瑞兹\n芸阿娜\n巴德",null,null,null,null,"酒桶\n狼母\n岩雀\n轮子妈\n泰坦","鳄鱼\n波比\n沙皇\n厄斐琉斯\n锤石",null,null,null,null,"纳尔\n佛耶戈\n辛德拉\n炸弹人\n牛头","武器\n皇子\n妖姬\n女警\n蜘蛛"]
+Row 4: [46018,"JDG","3:1","EDG",null,"蓝JDG-红EDG\n时间39:37\n10分钟 0:1=1\n总人头13:15=28","JDG","EDG","EDG",null,null,"蓝JDG-红EDG\n时间31:30\n10分钟 2:1=3\n总人头18:10=28","JDG","EDG","JDG",null,null,"蓝EDG-红JDG\n时间39:30\n10分钟 2:3=5\n总人头21:11=32","EDG","JDG","JDG",null,null,"蓝EDG-红JDG\n时间40:52\n10分钟 1:0=1\n总人头18:8=26","EDG","JDG","JDG"]
+Skipped (Exists): JDG vs EDG
+Row 5: [null,null,null,null,null,null,"塞恩\n琪亚娜\n沙皇\n厄斐琉斯\n牛头","亚恒\n猴子\n岩雀\n炸弹人\n芮尔",null,null,null,null,"兰博\n赵信\n维克托\n卡莎\n洛","狼母\n梦魇\n阿卡丽\n芸阿娜\n日女",null,null,null,null,"奎桑提\n潘森\n龙王\n烬\n波比","乌迪尔\n皇子\n梅尔\n韦鲁斯\n泰坦",null,null,null,null,"剑魔\n石头人\n冰鸟\n轮子妈\n布隆","鳄鱼\n杰斯\n瑞兹\nVN\n巴德"]
+Skipped (Exists): OMG vs LNG
+Skipped (Exists): AL vs LGD
+Skipped (Exists): IG vs LNG
+Skipped (Exists): LGD vs JDG
+Skipped (Exists): IG vs JDG

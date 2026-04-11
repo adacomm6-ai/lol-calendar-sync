@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战队资料库 - 优化后布局预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1923;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 32px;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .region-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .region-tab {
+            padding: 8px 18px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border: 1px solid #1e293b;
+            background: #1e293b;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .region-tab.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .region-tab:hover:not(.active) {
+            background: #334155;
+            color: #cbd5e1;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #334155;
+        }
+
+        .search-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 8px 14px 8px 36px;
+            color: #e2e8f0;
+            font-size: 13px;
+            width: 300px;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .search-wrap {
+            position: relative;
+        }
+
+        .search-wrap::before {
+            content: '🔍';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+        }
+
+        .counter {
+            font-size: 10px;
+            font-weight: 900;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: #0f172a;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .counter span {
+            color: #3b82f6;
+        }
+
+        .table-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        thead tr {
+            background: #0f172a;
+        }
+
+        thead th {
+            padding: 14px 16px;
+            font-size: 10px;
+            font-weight: 900;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            transition: background 0.15s;
+        }
+
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
+
+        .team-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 200px;
+        }
+
+        .team-logo {
+            width: 36px;
+            height: 36px;
+            background: #0f172a;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #334155;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .team-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #f1f5f9;
+        }
+
+        .team-id {
+            font-size: 9px;
+            color: #475569;
+            font-family: monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .team-short {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #e2e8f0;
+            width: 65px;
+            font-family: monospace;
+            outline: none;
+            margin-top: 2px;
+        }
+
+        .team-short:focus {
+            border-color: #3b82f6;
+        }
+
+        .tags-cell {
+            min-width: 280px;
+        }
+
+        .tag-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tag-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .tag-group-label {
+            font-size: 9px;
+            font-weight: 900;
+            color: #475569;
+            width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .tag {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            user-select: none;
+        }
+
+        .tag.year.active {
+            background: #f59e0b;
+            color: #fff;
+            border-color: #f59e0b;
+        }
+
+        .tag.year:not(.active) {
+            background: transparent;
+            color: #475569;
+            border-color: #334155;
+        }
+
+        .tag.year:hover:not(.active) {
+            border-color: #92400e;
+            color: #fbbf24;
+        }
+
+        .tag.region.active {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .tag.region:not(.active) {
+            background: transparent;
+            color: #475569;
+            border-color: #334155;
+        }
+
+        .tag.region:hover:not(.active) {
+            border-color: #1d4ed8;
+            color: #60a5fa;
+        }
+
+        .tag.split.active {
+            background: #7c3aed;
+            color: #fff;
+            border-color: #7c3aed;
+        }
+
+        .tag.split:not(.active) {
+            background: transparent;
+            color: #475569;
+            border-color: #334155;
+        }
+
+        .tag.split:hover:not(.active) {
+            border-color: #6d28d9;
+            color: #a78bfa;
+        }
+
+        .actions-th,
+        .actions-td {
+            position: sticky;
+            right: 0;
+            z-index: 2;
+            background: #0f172a;
+        }
+
+        .actions-td {
+            background: #1e293b;
+        }
+
+        tbody tr:hover .actions-td {
+            background: #1a2740;
+        }
+
+        .actions-td::before,
+        .actions-th::before {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: linear-gradient(to right, transparent, rgba(15, 23, 42, 0.8));
+            pointer-events: none;
+        }
+
+        .action-btns {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-sync {
+            font-size: 9px;
+            font-weight: 900;
+            background: transparent;
+            color: #3b82f6;
+            border: 1px solid #1e3a5f;
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-sync:hover {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .btn-delete {
+            font-size: 10px;
+            font-weight: 900;
+            background: transparent;
+            color: #ef4444;
+            border: 1px solid #3b1a1a;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        .notes {
+            margin-top: 32px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .notes h3 {
+            font-size: 14px;
+            font-weight: 800;
+            color: #f1f5f9;
+            margin-bottom: 12px;
+        }
+
+        .notes ul {
+            padding-left: 20px;
+        }
+
+        .notes li {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            line-height: 1.6;
+        }
+
+        .notes li strong {
+            color: #e2e8f0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            margin: 0 2px;
+        }
+
+        .badge.amber {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .badge.blue {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .badge.purple {
+            background: #7c3aed;
+            color: #fff;
+        }
+
+        .badge.ghost {
+            background: transparent;
+            border: 1px solid #475569;
+            color: #94a3b8;
+        }
+
+        .legend {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            padding: 0 4px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>战队资料库 <span style="font-size:12px;color:#3b82f6;font-weight:400;margin-left:8px;">— 优化后布局预览（可交互）</span></h1>
+        <p>3 列紧凑布局 · 分组标签管理 · 操作列始终可见 · 赛段缩写兼容多赛段扩展 · 点击标签可切换激活状态</p>
+    </div>
+    <div class="region-tabs">
+        <div class="region-tab active">全联盟视图 (ALL)</div>
+        <div class="region-tab">LPL 赛区</div>
+        <div class="region-tab">LCK 赛区</div>
+    </div>
+    <div class="toolbar">
+        <div class="search-wrap"><input type="text" class="search-box" placeholder="在当前视图中快速检索战队..."></div>
+        <div style="display:flex;gap:12px;align-items:center;">
+            <div class="counter">INDEXED: <span>8</span> TEAMS</div>
+        </div>
+    </div>
+    <div class="legend">
+        <div class="legend-item"><span class="badge amber">2026</span> = 年份</div>
+        <div class="legend-item"><span class="badge blue">LPL</span> = 赛区</div>
+        <div class="legend-item"><span class="badge purple">S1</span> = 赛段（悬停看全称）</div>
+        <div class="legend-item"><span class="badge ghost">灰色</span> = 未激活</div>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:220px;">战队 (TEAM)</th>
+                    <th>标签管理 (TAGS)</th>
+                    <th class="actions-th" style="text-align:center; width:100px;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="teamBody"></tbody>
+        </table>
+    </div>
+    <div class="notes">
+        <h3>📌 设计要点</h3>
+        <ul>
+            <li><strong>6 列 → 3 列</strong>：战队信息+简写合并 | 年份+赛区+赛段合并为标签管理 | 操作列 sticky 固定</li>
+            <li><strong>赛段缩写映射</strong>：Split 1→<span class="badge purple">S1</span> Split 1 Playoffs→<span
+                    class="badge purple">S1P</span> Split 2→<span class="badge purple">S2</span> Split 3→<span
+                    class="badge purple">S3</span> 悬停可看全称</li>
+            <li><strong>操作列固定</strong>：CSS sticky right，无论内容多宽，同步/删除按钮始终可见</li>
+            <li><strong>标签自动换行</strong>：flex-wrap 布局，新增赛段/年份时自动适应</li>
+            <li><strong>扩展测试</strong>：表中已包含 3 个年份（含未来 2027）+ 7 个赛段，模拟未来场景的 T1 行有最多标签</li>
+        </ul>
+    </div>
+    <script>
+        const teams = [
+            { logo: '🔵', name: 'Bilibili Gaming', id: 'bilibili-gaming', short: 'BLG', years: ['2025', '2026'], regions: ['LPL', 'LCK'], splits: ['S1', 'S2'] },
+            { logo: '🟡', name: 'Top Esports', id: 'top-esports', short: 'TES', years: ['2025', '2026'], regions: ['LPL'], splits: ['S1', 'S1P', 'S2', 'S3'] },
+            { logo: '🔴', name: 'JD Gaming', id: 'jd-gaming', short: 'JDG', years: ['2026', '2027'], regions: ['LPL'], splits: ['S1', 'Cup'] },
+            { logo: '⚪', name: 'T1', id: 't1', short: 'T1', years: ['2025', '2026', '2027'], regions: ['LCK'], splits: ['S1', 'S1P', 'S2', 'S3', 'MSI', 'W'] },
+            { logo: '🟣', name: 'Gen.G', id: 'geng', short: 'GEN', years: ['2025', '2026'], regions: ['LCK'], splits: ['S1', 'S2', 'MSI'] },
+            { logo: '🟠', name: 'Hanwha Life Esports', id: 'hanwha-life', short: 'HLE', years: ['2026'], regions: ['LCK'], splits: ['S1', 'S1P'] },
+            { logo: '🔶', name: 'Dplus KIA', id: 'dplus-kia', short: 'DK', years: ['2025', '2026', '2027'], regions: ['LPL', 'LCK'], splits: ['S1', 'S2', 'S3', 'W'] },
+            { logo: '🟢', name: 'FunPlus Phoenix', id: 'funplus-phoenix', short: 'FPX', years: ['2025'], regions: ['LPL'], splits: ['S1', 'Cup'] },
+        ];
+        const allYears = ['2025', '2026', '2027'];
+        const allRegions = ['LPL', 'LCK'];
+        const allSplits = [
+            { id: 'S1', full: '第一赛段 (Spring)' },
+            { id: 'S1P', full: '第一赛段季后赛 (Spring Playoffs)' },
+            { id: 'S2', full: '第二赛段 (Summer)' },
+            { id: 'S3', full: '第三赛段 (Winter/Cup)' },
+            { id: 'Cup', full: '德玛西亚杯 (Demacia Cup)' },
+            { id: 'MSI', full: '季中冠军赛 (MSI)' },
+            { id: 'W', full: '全球总决赛 (Worlds)' },
+        ];
+        function renderTags(activeList, allList, type, useTooltips) {
+            return allList.map(item => {
+                const label = typeof item === 'string' ? item : item.id;
+                const tip = useTooltips && typeof item === 'object' ? item.full : '';
+                const isActive = activeList.includes(label);
+                return '<span class="tag ' + type + (isActive ? ' active' : '') + '" title="' + tip + '" onclick="this.classList.toggle(\'active\')">' + label + '</span>';
+            }).join('');
+        }
+        document.getElementById('teamBody').innerHTML = teams.map(t =>
+            '<tr><td><div class="team-cell"><div class="team-logo">' + t.logo + '</div><div class="team-info"><div class="team-name">' + t.name + '</div><div class="team-id">' + t.id + '</div><input class="team-short" value="' + t.short + '" /></div></div></td>' +
+            '<td class="tags-cell"><div class="tag-group"><span class="tag-group-label" title="年份">年</span>' + renderTags(t.years, allYears, 'year') + '</div><div class="tag-group"><span class="tag-group-label" title="赛区">区</span>' + renderTags(t.regions, allRegions, 'region') + '</div><div class="tag-group"><span class="tag-group-label" title="赛段">段</span>' + renderTags(t.splits, allSplits, 'split', true) + '</div></td>' +
+            '<td class="actions-td"><div class="action-btns"><button class="btn-sync">同步</button><button class="btn-delete">✕</button></div></td></tr>'
+        ).join('');
+    </script>
+</body>
+
+</html>

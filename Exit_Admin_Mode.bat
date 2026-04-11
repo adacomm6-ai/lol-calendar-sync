@@ -1,0 +1,3 @@
+@echo off
+echo Exiting Admin Mode...
+start http://localhost:3000/?admin=false

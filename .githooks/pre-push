@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+
+if [ "${SKIP_BUILD_CHECK:-0}" = "1" ]; then
+  exit 0
+fi
+
+echo "pre-push: 运行本地构建校验..."
+
+if command -v npm.cmd >/dev/null 2>&1; then
+  npm.cmd run build
+else
+  npm run build
+fi

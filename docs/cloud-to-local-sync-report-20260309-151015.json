@@ -1,0 +1,102 @@
+{
+  "startedAt": "2026-03-09T07:05:43.091Z",
+  "finishedAt": "2026-03-09T07:10:15.869Z",
+  "durationMs": 272779,
+  "fullReplace": true,
+  "cloud": "postgresql://***@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres",
+  "localDb": "D:\\lol-data-system\\prisma\\dev.db",
+  "localBackupPath": "D:\\lol-data-system\\backups\\local-db\\dev-before-cloud-sync-20260309-150543.db",
+  "totalFetched": 2635,
+  "totalInserted": 2635,
+  "totalFailed": 0,
+  "tables": [
+    {
+      "table": "Team",
+      "cleared": 38,
+      "fetched": 38,
+      "inserted": 38,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Hero",
+      "cleared": 172,
+      "fetched": 172,
+      "inserted": 172,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "UserProfile",
+      "cleared": 4,
+      "fetched": 4,
+      "inserted": 4,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "SystemSettings",
+      "cleared": 1,
+      "fetched": 1,
+      "inserted": 1,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "GameVersionRule",
+      "cleared": 9,
+      "fetched": 9,
+      "inserted": 9,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Player",
+      "cleared": 201,
+      "fetched": 205,
+      "inserted": 205,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Match",
+      "cleared": 146,
+      "fetched": 146,
+      "inserted": 146,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Game",
+      "cleared": 428,
+      "fetched": 428,
+      "inserted": 428,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Comment",
+      "cleared": 374,
+      "fetched": 376,
+      "inserted": 376,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "TeamComment",
+      "cleared": 24,
+      "fetched": 24,
+      "inserted": 24,
+      "failed": 0,
+      "insertMode": "create"
+    },
+    {
+      "table": "Odds",
+      "cleared": 1232,
+      "fetched": 1232,
+      "inserted": 1232,
+      "failed": 0,
+      "insertMode": "create"
+    }
+  ]
+}

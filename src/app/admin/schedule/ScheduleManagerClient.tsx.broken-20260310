@@ -1,0 +1,830 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import {
+    searchMatches,
+    deleteMatch,
+    importMatches,
+    importFromWiki,
+    refreshPlayoffBracket,
+    MatchFormData,
+    updateMatchStage,`r`n    bulkUpdateMatches,`r`n} from './actions';
+import MatchEditModal from '@/components/admin/MatchEditModal';
+import PlayoffGeneratorModal from '@/components/admin/PlayoffGeneratorModal';
+import GameVersionRulesModal from '@/components/admin/GameVersionRulesModal';
+import type { MatchStageOption } from '@/lib/config-service';
+
+type Team = { id: string; name: string; shortName: string | null; region: string };
+
+function toBeijingInputValue(isoString: string | Date | null | undefined): string {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return '';
+    const beijingMs = d.getTime() + 8 * 60 * 60 * 1000;
+    const bj = new Date(beijingMs);
+    const yyyy = bj.getUTCFullYear();
+    const MM = String(bj.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(bj.getUTCDate()).padStart(2, '0');
+    const hh = String(bj.getUTCHours()).padStart(2, '0');
+    const mm = String(bj.getUTCMinutes()).padStart(2, '0');
+    return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+}
+
+export default function ScheduleManagerClient({
+    initialMatches,
+    teams,
+    existingTournaments,
+    systemRegions,
+    stageOptions,
+    localOnly = false,
+}: {
+    initialMatches: any[];
+    teams: Team[];
+    existingTournaments: string[];
+    systemRegions?: string[];
+    stageOptions?: MatchStageOption[];
+    localOnly?: boolean;
+}) {
+    const [matches, setMatches] = useState(initialMatches);
+    const [loading, setLoading] = useState(false);
+    const [stageUpdatingId, setStageUpdatingId] = useState<string | null>(null);
+
+    const [filterDate, setFilterDate] = useState('');
+    const [filterRegion, setFilterRegion] = useState('');
+    const [filterTournament, setFilterTournament] = useState('');
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isWikiModalOpen, setIsWikiModalOpen] = useState(false);
+    const [isPlayoffGeneratorOpen, setIsPlayoffGeneratorOpen] = useState(false);
+    const [isPlayoffRefreshOpen, setIsPlayoffRefreshOpen] = useState(false);
+    const [isVersionRulesOpen, setIsVersionRulesOpen] = useState(false);`r`n    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+
+    const [playoffRefreshTournament, setPlayoffRefreshTournament] = useState('');
+    const [playoffRefreshLocalTournament, setPlayoffRefreshLocalTournament] = useState('');
+    const [playoffRefreshResult, setPlayoffRefreshResult] = useState<any>(null);
+
+    const [importData, setImportData] = useState('');
+    const [wikiTournament, setWikiTournament] = useState('');
+    const [editingMatch, setEditingMatch] = useState<MatchFormData | null>(null);`r`n    const [bulkTournament, setBulkTournament] = useState('');`r`n    const [bulkStage, setBulkStage] = useState('');`r`n    const [bulkFormat, setBulkFormat] = useState('');`r`n    const [bulkStatus, setBulkStatus] = useState('');`r`n    const [bulkGameVersion, setBulkGameVersion] = useState('');`r`n    const [bulkClearVersion, setBulkClearVersion] = useState(false);
+
+    const regions: string[] = useMemo(
+        () =>
+            (systemRegions ||
+                Array.from(
+                    new Set(
+                        teams.flatMap((t) =>
+                            (t.region || '')
+                                .split(',')
+                                .map((s) => s.trim().split(/[\s,]+/)[0])
+                                .filter(Boolean),
+                        ),
+                    ),
+                ))
+                .filter((r): r is string => !!r && r.length > 1 && !/^\d+$/.test(r))
+                .sort(),
+        [systemRegions, teams],
+    );
+    const defaultRegularStage = useMemo(() => {
+        const options = stageOptions || [];
+        const found = options.find((opt) => (opt.enabled !== false) && opt.category !== 'playoff');
+        return found?.id || 'Regular Season';
+    }, [stageOptions]);
+    const stageLabelMap = useMemo(() => {
+        return new Map((stageOptions || []).map((s) => [s.id, s.label || s.id]));
+    }, [stageOptions]);
+    const enabledStageOptions = useMemo(
+        () => (stageOptions || []).filter((opt) => opt.enabled !== false),
+        [stageOptions],
+    );
+    const [batchStage, setBatchStage] = useState(defaultRegularStage);
+
+    useEffect(() => {
+        if (!batchStage || !enabledStageOptions.some((opt) => opt.id === batchStage)) {
+            setBatchStage(defaultRegularStage);
+        }
+    }, [batchStage, defaultRegularStage, enabledStageOptions]);
+
+    const availableTournaments = useMemo(
+        () =>
+            filterRegion
+                ? existingTournaments.filter(
+                      (t) => t.toLowerCase().includes(filterRegion.toLowerCase()) || filterRegion === '闂佺绻戝﹢鍦垝?,
+                  )
+                : existingTournaments,
+        [existingTournaments, filterRegion],
+    );
+
+    const flattenedMatches = useMemo(
+        () =>
+            [...matches].sort((a, b) => {
+                if (!a.startTime && !b.startTime) return 0;
+                if (!a.startTime) return 1;
+                if (!b.startTime) return -1;
+                return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+            }),
+        [matches],
+    );
+
+    const getMatchRegion = (m: any) => {
+        const tournament = m.tournament || '';
+        const sortedRegions = [...regions].sort((a, b) => b.length - a.length);
+        for (const r of sortedRegions) {
+            if (tournament.includes(r)) return r;
+        }
+        return m.teamA?.region || m.teamB?.region || '闂佺绻戝﹢鍦垝椤掑倹灏庢繛鎴灻梾?;
+    };
+
+    const handleSearch = async () => {
+        setLoading(true);
+        const dateParam = filterDate || 'ALL';
+        const regionParam = filterTournament || filterRegion;
+        const res = await searchMatches(dateParam, regionParam);
+        if (res.success && res.matches) {
+            setMatches(res.matches);
+        } else {
+            alert('闂佺懓鍚嬬划搴ㄥ磼閵婏箑绶為弶鍫亯琚? ' + res.error);
+        }
+        setLoading(false);
+    };
+
+    const handleSaveSuccess = async (savedMatch?: any) => {
+        if (!savedMatch || !savedMatch.id) return;
+
+        setMatches((prev) => {
+            const existingIndex = prev.findIndex((m: any) => m.id === savedMatch.id);
+            if (existingIndex >= 0) {
+                const next = [...prev];
+                next[existingIndex] = { ...next[existingIndex], ...savedMatch };
+                return next;
+            }
+            return [savedMatch, ...prev];
+        });
+    };
+
+    const handleEdit = (match: any) => {
+        setEditingMatch({
+            id: match.id,
+            startTime: match.startTime ? toBeijingInputValue(match.startTime) : '',
+            teamAId: match.teamAId,
+            teamBId: match.teamBId,
+            status: match.status,
+            format: match.format,
+            tournament: match.tournament,
+            stage: match.stage,
+            gameVersion: match.gameVersion || '',
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleCreate = () => {
+        const now = new Date();
+        now.setHours(17, 0, 0, 0);
+        setEditingMatch({
+            startTime: toBeijingInputValue(now),
+            teamAId: '',
+            teamBId: '',
+            status: 'SCHEDULED',
+            format: 'BO3',
+            tournament: `2026 ${filterRegion || 'LPL'} Split 1`,
+            stage: defaultRegularStage,
+            gameVersion: '',
+        });
+        setIsModalOpen(true);
+    };
+
+    
+    const handleDelete = async (id: string) => {
+        if (!confirm('缂佺虎鍙庨崰鏍偩妤ｅ啫绀嗛柣妯肩帛閻濈喖寮堕埡鍌滄噧婵犙€鍋撳┑顕嗙稻濡胶绮嬪畝鍕Е婵°倕顑囬崥瑙勬叏濠靛嫬鈧牠骞栭柨瀣婵犲﹤瀚敓銉︾箾婢跺绀冮柟鍛婄懇閺屻劑鍩€椤掑嫬违?)) return;
+        const snapshot = matches;
+        setMatches((prev) => prev.filter((m: any) => m.id !== id));
+        setLoading(true);
+        const res = await deleteMatch(id);
+        if (!res.success) {
+            setMatches(snapshot);
+            alert('闂佸憡甯炴繛鈧繛鍛瀵板嫭娼忛銉? ' + res.error);
+        }
+        setLoading(false);
+    };
+    const handleQuickUpdateStage = async (matchId: string, nextStage: string) => {
+        const snapshot = matches;
+        setStageUpdatingId(matchId);
+        setMatches((prev) =>
+            prev.map((m: any) =>
+                m.id === matchId
+                    ? { ...m, stage: nextStage }
+                    : m,
+            ),
+        );
+        const res = await updateMatchStage(matchId, nextStage);
+        if (!res.success) {
+            setMatches(snapshot);
+            alert('闂傚倸鍟抽崺鏍敊瀹€鍕嵆閻庢稒蓱閻撯偓婵犮垺鍎肩划鍓ф喆? ' + res.error);
+        }
+        setStageUpdatingId(null);
+    };
+
+    const handleBulkApply = async () => {
+        const ids = flattenedMatches.map((m: any) => m.id).filter(Boolean);
+        if (ids.length === 0) {
+            alert('鐟滅増鎸告晶鐘电驳濞戔懇鍋撴径宀€娉㈤柡瀣矆鐠愮喓绮氶悮瀵哥闁哄啰濮电涵鍫曞箥瑜版帒娅ゅǎ鍥跺枟閺佸ジ濡?);
+            return;
+        }
+
+        const payload: Record<string, any> = {};
+        if (bulkTournament.trim()) payload.tournament = bulkTournament.trim();
+        if (bulkStage.trim()) payload.stage = bulkStage.trim();
+        if (bulkFormat.trim()) payload.format = bulkFormat.trim();
+        if (bulkStatus.trim()) payload.status = bulkStatus.trim();
+        if (bulkClearVersion) payload.gameVersion = null;
+        else if (bulkGameVersion.trim()) payload.gameVersion = bulkGameVersion.trim();
+
+        if (Object.keys(payload).length === 0) {
+            alert('閻犲洨鏌夐崵锔句焊閹存繐缍栭柛鎰懁缁斿瓨绋夐鍥舵矗闁归潧缍婇崳鐑樼┍椤旇姤鏆柣銊ュ閻⊙冣枔閻愬厜鍋?);
+            return;
+        }
+
+        if (!confirm(`缁绢収鍠涢鑽も偓鐢垫嚀缂嶅宕滃鍥╂懀闂侇偄顦辩划銊╁几濠婂啫褰?${ids.length} 闁革妇鍎ら惁顔炬導濞戞瑥鈷旈悶娑樻湰婢规帡鏌岃箛搴㈠弿闁衡偓閻熺増鍋嬮柨娑氬壂)) return;
+
+        setLoading(true);
+        const res = await bulkUpdateMatches(ids, payload);
+        if (res.success) {
+            alert(`闁归潧缍婇崳鐑樼┍椤旇姤鏆柟瀛樺姇婵盯鏁?{res.count} 闁革附浜介埀顑跨箹);
+            setIsBulkEditOpen(false);
+            setBulkTournament('');
+            setBulkStage('');
+            setBulkFormat('');
+            setBulkStatus('');
+            setBulkGameVersion('');
+            setBulkClearVersion(false);
+            await handleSearch();
+        } else {
+            alert('闁归潧缍婇崳鐑樼┍椤旇姤鏆鎯扮簿鐟? ' + res.error);
+        }
+        setLoading(false);
+    };
+    return (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 text-white min-h-[600px]">
+            <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
+                <h1 className="text-2xl font-bold">闁荤姍鍕€掗柍璇层偢瀹曟艾螖閸曗斁鍋?/h1>
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-bold text-sm"
+                    >
+                        + 闂佸綊娼х紞濠囧闯閾忓厜鍋撻悽闈涘付闁?                    </button>
+                    {!localOnly && (
+                        <button
+                            onClick={() => setIsWikiModalOpen(true)}
+                            className="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold text-sm"
+                        >
+                            + Wiki 闁诲海鏁搁崢褔宕?                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsPlayoffGeneratorOpen(true)}
+                        className="bg-pink-600 hover:bg-pink-500 text-white px-4 py-2 rounded font-bold text-sm"
+                    >
+                        + 闂佸搫绉甸崹闈浢瑰鈧幃浠嬫偄缁嬭法浜ｉ梺?                    </button>
+                    {!localOnly && (
+                        <button
+                            onClick={() => {
+                                setIsPlayoffRefreshOpen(true);
+                                setPlayoffRefreshResult(null);
+                            }}
+                            className="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded font-bold text-sm"
+                        >
+                            濠电儑绲捐摫闁告鍨归幐褍鈽夊▎鎰嚱闂?                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsVersionRulesOpen(true)}
+                        className="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-2 rounded font-bold text-sm"
+                    >
+                        闂佺粯顨呴悧濠傦耿閻楀牊鍎熼柟楣冾杺閸氣偓闂?                    </button>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-bold text-sm"
+                    >
+                        + 闂佸憡顨嗗ú鏍р攦閳ь剚鎱ㄩ敐鍡橆梿缂?                    </button>
+                    {localOnly && (
+                        <span className="text-xs px-3 py-2 rounded border border-slate-700 text-slate-300 bg-slate-800">
+                            闂佸搫鐗滈崜娆忥耿閺夋嚦鐔煎灳瀹曞洨顢呴梺鎸庣⊕閼归箖宕欓敓鐘茬闁规儼濮ら敍鏂棵瑰鍕仼妞ゅ浚鍓熼獮搴ㄥ箻閸愯尙鎮奸梺绋跨箞閸庤精銇?                        </span>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4 mb-6 bg-slate-800/50 p-4 rounded-lg items-end border border-slate-700/50">
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-400 font-bold">1. 闁荤姍鍕槈閻忓浚鍨卞濠氬炊閵婏箑袘</label>
+                    <select
+                        className="bg-slate-900 border border-slate-700 rounded p-1.5 text-sm text-white min-w-[120px]"
+                        value={filterRegion}
+                        onChange={(e) => {
+                            setFilterRegion(e.target.value);
+                            setFilterTournament('');
+                        }}
+                    >
+                        <option value="">闂佺绻堥崝鎴﹀磿鐎靛憡灏庢繛鎴灻梾?/ All</option>
+                        {regions.map((r) => (
+                            <option key={r} value={r}>
+                                {r}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                    <label className="text-xs text-slate-400 font-bold">2. 闁荤姍鍕棩缂併劊鍔嶅濠氬炊閵婏箑袘</label>
+                    <select
+                        className="bg-slate-900 border border-slate-700 rounded p-1.5 text-sm text-white min-w-[220px]"
+                        value={filterTournament}
+                        onChange={(e) => setFilterTournament(e.target.value)}
+                    >
+                        <option value="">闂佺绻堥崝鎴﹀磿鐎靛憡灏庢繛鎴烆殘閻?/option>
+                        {availableTournaments.map((t) => (
+                            <option key={t} value={t}>
+                                {t}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-1 ml-auto">
+                    <label className="text-xs text-slate-400 font-bold">闂佸搫鍟ㄩ崕鎻掞耿閿熺姵鏅柛顐ｇ箓鐠佹煡姊洪銏╂缂?/label>
+                    <input
+                        type="date"
+                        className="bg-slate-900 border border-slate-700 rounded p-1.5 text-sm text-white"
+                        value={filterDate}
+                        onChange={(e) => setFilterDate(e.target.value)}
+                    />
+                </div>
+                <button
+                    onClick={handleSearch}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-1.5 rounded font-bold text-sm h-[34px]"
+                    disabled={loading}
+                >
+                    {loading ? '闂佸搫琚崕鎾敋濡や胶鈻?..' : '闂佺懓鍚嬬划搴ㄥ磼?}
+                </button>
+            </div>
+
+            <div className="overflow-x-auto rounded-lg border border-slate-700 bg-slate-900/50">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-[#1e293b] text-slate-300 font-bold uppercase tracking-wider text-xs border-b border-slate-700">
+                        <tr>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-24">闁荤姍鍕槈閻?/th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-48">闁荤姍鍕棩缂?/th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-32">闂傚倸鍟抽崺鏍敊?/th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-40">闂佸搫鍟悥鐓幬?(闂佸憡鐗楅妵鐐哄触椤愶箑绫嶉柛顐ｆ礃閿?</th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-64 text-center">闁诲酣娼х紞濠偽熼埀?/th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-16 text-center">闁荤姍鍕槈闁?/th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-44 text-center">Version / Edit</th>
+                            <th className="px-4 py-3 border-r border-slate-700/50 w-24 text-center">闂佺粯顭堥崺鏍焵?/th>
+                            <th className="px-4 py-3 text-center w-20">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/50">
+                        {flattenedMatches.map((m: any) => {
+                            const dateObj = m.startTime ? new Date(m.startTime) : null;
+                            const timeStr = dateObj
+                                ? new Intl.DateTimeFormat('zh-CN', {
+                                      timeZone: 'Asia/Shanghai',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: false,
+                                  }).format(dateObj)
+                                : 'TBD';
+
+                            const region = getMatchRegion(m);
+
+    const handleBulkApply = async () => {
+        const ids = flattenedMatches.map((m: any) => m.id).filter(Boolean);
+        if (ids.length === 0) {
+            alert('鐟滅増鎸告晶鐘电驳濞戔懇鍋撴径宀€娉㈤柡瀣矆鐠愮喓绮氶悮瀵哥闁哄啰濮电涵鍫曞箥瑜版帒娅ゅǎ鍥跺枟閺佸ジ濡?);
+            return;
+        }
+
+        const payload: Record<string, any> = {};
+        if (bulkTournament.trim()) payload.tournament = bulkTournament.trim();
+        if (bulkStage.trim()) payload.stage = bulkStage.trim();
+        if (bulkFormat.trim()) payload.format = bulkFormat.trim();
+        if (bulkStatus.trim()) payload.status = bulkStatus.trim();
+        if (bulkClearVersion) payload.gameVersion = null;
+        else if (bulkGameVersion.trim()) payload.gameVersion = bulkGameVersion.trim();
+
+        if (Object.keys(payload).length === 0) {
+            alert('閻犲洨鏌夐崵锔句焊閹存繐缍栭柛鎰懁缁斿瓨绋夐鍥舵矗闁归潧缍婇崳鐑樼┍椤旇姤鏆柣銊ュ閻⊙冣枔閻愬厜鍋?);
+            return;
+        }
+
+        if (!confirm(`缁绢収鍠涢鑽も偓鐢垫嚀缂嶅宕滃鍥╂懀闂侇偄顦辩划銊╁几濠婂啫褰?${ids.length} 闁革妇鍎ら惁顔炬導濞戞瑥鈷旈悶娑樻湰婢规帡鏌岃箛搴㈠弿闁衡偓閻熺増鍋嬮柨娑氬壂)) return;
+
+        setLoading(true);
+        const res = await bulkUpdateMatches(ids, payload);
+        if (res.success) {
+            alert(`闁归潧缍婇崳鐑樼┍椤旇姤鏆柟瀛樺姇婵盯鏁?{res.count} 闁革附浜介埀顑跨箹);
+            setIsBulkEditOpen(false);
+            setBulkTournament('');
+            setBulkStage('');
+            setBulkFormat('');
+            setBulkStatus('');
+            setBulkGameVersion('');
+            setBulkClearVersion(false);
+            await handleSearch();
+        } else {
+            alert('闁归潧缍婇崳鐑樼┍椤旇姤鏆鎯扮簿鐟? ' + res.error);
+        }
+        setLoading(false);
+    };
+    return (
+                                <tr key={m.id} className="hover:bg-slate-700/40 transition-colors group">
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-slate-300 font-medium">
+                                        <span className="px-2 py-0.5 bg-slate-800 rounded text-xs">{region}</span>
+                                    </td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-slate-300 truncate max-w-[200px]" title={m.tournament}>
+                                        {m.tournament || '-'}
+                                    </td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-slate-400 max-w-[170px]">
+                                        <select
+                                            className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 text-xs text-white"
+                                            value={m.stage || ''}
+                                            onChange={(e) => handleQuickUpdateStage(m.id, e.target.value)}
+                                            disabled={loading || stageUpdatingId === m.id}
+                                            title={m.stage || ''}
+                                        >
+                                            {m.stage && !enabledStageOptions.some((opt) => opt.id === m.stage) && (
+                                                <option value={m.stage}>
+                                                    {stageLabelMap.get(m.stage || '') || m.stage}闂佹寧绋戦悧鎰板吹濠婂應鍋撶憴鍕叝缂佺姷鍠栭弫?                                                </option>
+                                            )}
+                                            {enabledStageOptions.map((opt) => (
+                                                <option key={opt.id} value={opt.id}>
+                                                    {opt.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 font-mono text-slate-400 text-xs">{timeStr}</td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 font-bold text-slate-200">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span
+                                                className={`w-20 text-right truncate ${
+                                                    m.winnerId && m.teamA && m.winnerId === m.teamA.id ? 'text-green-400' : ''
+                                                }`}
+                                                title={m.teamA?.name || 'TBD'}
+                                            >
+                                                {m.teamA?.shortName || m.teamA?.name || 'TBD'}
+                                            </span>
+                                            <span className="text-slate-600 px-1 text-[10px]">VS</span>
+                                            <span
+                                                className={`w-20 text-left truncate ${
+                                                    m.winnerId && m.teamB && m.winnerId === m.teamB.id ? 'text-green-400' : ''
+                                                }`}
+                                                title={m.teamB?.name || 'TBD'}
+                                            >
+                                                {m.teamB?.shortName || m.teamB?.name || 'TBD'}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-center text-slate-500 text-xs font-bold">{m.format}</td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-center">
+                                        <div className="flex items-center justify-center gap-2">
+                                            <span
+                                                className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
+                                                    m.gameVersion
+                                                        ? 'bg-cyan-900/30 text-cyan-300 border border-cyan-700/40'
+                                                        : 'bg-slate-800 text-slate-500 border border-slate-700'
+                                                }`}
+                                            >
+                                                {m.gameVersion || 'VERSION TBD'}
+                                            </span>
+                                            <button
+                                                onClick={() => handleEdit(m)}
+                                                className="text-blue-400 hover:text-blue-300 font-black text-[10px]"
+                                                title="Edit version / match"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 border-r border-slate-700/30 text-center">
+                                        <span
+                                            className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
+                                                m.status === 'LIVE'
+                                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                    : m.status === 'FINISHED'
+                                                      ? 'bg-slate-800 text-slate-400 border border-slate-700'
+                                                      : 'bg-blue-900/40 text-blue-300 border border-blue-800'
+                                            }`}
+                                        >
+                                            {m.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-2 text-center opacity-60 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => handleDelete(m.id)} className="text-red-400 hover:text-red-300 font-medium text-xs">
+                                            闂佸憡甯炴繛鈧繛?                                        </button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                        {flattenedMatches.length === 0 && (
+                            <tr>
+                                <td colSpan={9} className="text-center py-20 text-slate-500">
+                                    闂佸搫鐗滄禍婵囩珶濮椻偓瀹曟岸骞嶉鍛墾闂佸憡鑹鹃悧蹇涙偤椤愶附鐒诲璺侯儐閽傚霉閻樻彃顣虫繛鍫熷灥琚欓柡鍐ㄦ川椤?                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            <MatchEditModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingMatch(null);
+                }}
+                match={editingMatch}
+                teams={teams}
+                existingTournaments={existingTournaments}
+                systemRegions={systemRegions}
+                otherMatches={matches}
+                stageOptions={stageOptions}
+                onSaveSuccess={handleSaveSuccess}
+            />
+
+            <GameVersionRulesModal
+                isOpen={isVersionRulesOpen}
+                onClose={() => setIsVersionRulesOpen(false)}
+                regions={regions}
+                onUpdated={handleSearch}
+            />
+
+
+            {isBulkEditOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-2xl shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4">批量修改（当前筛选结果）</h2>
+                        <p className="text-xs text-slate-400 mb-4">将作用于当前列表中的 {flattenedMatches.length} 场比赛，仅修改你填写的字段。</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">赛事名称（tournament）</label>
+                                <input className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" value={bulkTournament} onChange={(e) => setBulkTournament(e.target.value)} placeholder="例如：2026 世界赛全球先锋赛" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">阶段（stage）</label>
+                                <select className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" value={bulkStage} onChange={(e) => setBulkStage(e.target.value)}>
+                                    <option value="">不修改</option>
+                                    {enabledStageOptions.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">赛制（format）</label>
+                                <select className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" value={bulkFormat} onChange={(e) => setBulkFormat(e.target.value)}>
+                                    <option value="">不修改</option>
+                                    <option value="BO1">BO1</option>
+                                    <option value="BO3">BO3</option>
+                                    <option value="BO5">BO5</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">状态（status）</label>
+                                <select className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}>
+                                    <option value="">不修改</option>
+                                    <option value="SCHEDULED">SCHEDULED</option>
+                                    <option value="LIVE">LIVE</option>
+                                    <option value="FINISHED">FINISHED</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">版本（gameVersion）</label>
+                                <input className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" value={bulkGameVersion} onChange={(e) => setBulkGameVersion(e.target.value)} placeholder="例如：26.05" disabled={bulkClearVersion} />
+                            </div>
+                            <div className="flex items-end">
+                                <label className="inline-flex items-center gap-2 text-sm text-slate-300">
+                                    <input type="checkbox" checked={bulkClearVersion} onChange={(e) => setBulkClearVersion(e.target.checked)} />
+                                    清空版本（优先于上方输入）
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button onClick={() => setIsBulkEditOpen(false)} className="text-slate-400 hover:text-white px-4 py-2">取消</button>
+                            <button onClick={handleBulkApply} disabled={loading} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded font-bold">
+                                {loading ? '执行中...' : '确认批量修改'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}            {isImportModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4">闂佸綊娼х紞濠囧闯閾忓厜鍋撻悽闈涘付闁告瑥妫楄闁哄啫娲ㄩ々?/h2>
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-slate-400 mb-1">闁荤姍鍕槈閻忓浚鍨堕弫宥夊醇閵忊剝娈㈡繛瀛樼矊闁帮絿鍒掗婊勫闁靛牆鐗忛々鍗灻瑰鍐惧剰闁诡喗娲熼弫?/label>
+                            <select
+                                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white mb-2"
+                                value={filterRegion}
+                                onChange={(e) => setFilterRegion(e.target.value)}
+                            >
+                                {regions.map((r) => (
+                                    <option key={r} value={r}>
+                                        {r}
+                                    </option>
+                                ))}
+                            </select>
+                            <label className="block text-xs font-bold text-slate-400 mb-1">婵帗绋掗…鍫ヮ敇婵犳碍鈷撻柤鍛婎問閸炰粙鏌ㄥ☉妯煎濠㈣甯￠弻宀冪疀閹垮啫娈奸梺绋跨箞閸庨亶宕幘璇茬闁靛鍨崇粈?/label>
+                            <select
+                                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white mb-2"
+                                value={batchStage}
+                                onChange={(e) => setBatchStage(e.target.value)}
+                            >
+                                {enabledStageOptions.map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <label className="block text-xs font-bold text-slate-400 mb-1">缂備緡鍠楅…鍫ュ礆濞戙垹鏋侀柣妤€鐗嗙粊锕傛煥濞戞澧涢柣锔肩磿閹壆浠﹂懖鈺婁紘闂侀潻濡囩亸銊ф閻ь櫉YY-MM-DD HH:mm TeamA vs TeamB闂?/label>
+                            <textarea
+                                className="w-full h-48 bg-slate-800 border border-slate-700 rounded p-2 text-white font-mono text-xs"
+                                placeholder={`2026-02-01 17:00 BLG vs JDG\n2026-02-01 19:00 TES vs WBG`}
+                                value={importData}
+                                onChange={(e) => setImportData(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setIsImportModalOpen(false)} className="text-slate-400 hover:text-white px-4 py-2">
+                                闂佸憡鐟﹂悧妤冪矓?                            </button>
+                            <button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    const res = await importMatches(importData, filterRegion || 'LPL', batchStage || defaultRegularStage);
+                                    if (res.success) {
+                                        alert(`闂佺懓鐡ㄩ崝鏇熸叏濞戞埃鍋撻悽闈涘付闁?${res.count} 闂侀潻濡囬崕銈夋儊椤旂偓灏庢繛?;
+                                        setIsImportModalOpen(false);
+                                        setImportData('');
+                                        await handleSearch();
+                                    } else {
+                                        alert('闁诲海鏁搁崢褔宕ｉ崱妯虹窞閺夊牜鍋夎: ' + res.error);
+                                    }
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded font-bold"
+                            >
+                                {loading ? '婵犮垼娉涚€氼噣骞冩繝鍐枖?..' : '閻庢鍠掗崑鎾斥攽椤旂⒈鍎忔い鏇憾瀹?}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!localOnly && isWikiModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+                        <h2 className="text-xl font-bold mb-4">婵?Leaguepedia 闁诲海鏁搁崢褔宕?/h2>
+                        <div className="mb-4">
+                            <label className="block text-xs font-bold text-slate-400 mb-1">闁荤姍鍕棩缂併劊鍔戝畷銉ヮ吋閸℃浠?URL</label>
+                            <input
+                                type="text"
+                                className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white"
+                                placeholder="LPL 2026 Split 1 闂?https://lol.fandom.com/wiki/..."
+                                value={wikiTournament}
+                                onChange={(e) => setWikiTournament(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setIsWikiModalOpen(false)} className="text-slate-400 hover:text-white px-4 py-2">
+                                闂佸憡鐟﹂悧妤冪矓?                            </button>
+                            <button
+                                onClick={async () => {
+                                    setLoading(true);
+                                    const res = await importFromWiki(wikiTournament);
+                                    if (res.success) {
+                                        alert(res.message || '闁诲海鏁搁崢褔宕ｉ崱娑樼闁归偊鍓欓～?);
+                                        setIsWikiModalOpen(false);
+                                        setWikiTournament('');
+                                        await handleSearch();
+                                    } else {
+                                        alert('闁诲海鏁搁崢褔宕ｉ崱妯虹窞閺夊牜鍋夎: ' + res.error);
+                                    }
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="bg-purple-600 hover:bg-purple-500 text-white px-6 py-2 rounded font-bold"
+                            >
+                                {loading ? '闂佺鍩栭幐姝屻亹閸ャ劎鈻?..' : '閻庢鍠掗崑鎾斥攽椤旂⒈鍎忔い鏇憾瀹?}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <PlayoffGeneratorModal
+                isOpen={isPlayoffGeneratorOpen}
+                onClose={() => setIsPlayoffGeneratorOpen(false)}
+                teams={teams}
+                existingTournaments={existingTournaments}
+                onSaveSuccess={handleSearch}
+            />
+
+            {!localOnly && isPlayoffRefreshOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-xl shadow-2xl max-h-[80vh] flex flex-col">
+                        <h2 className="text-xl font-bold mb-4">濠电儑绲捐摫闁告鍨归幐褍鈽夊鍜佹捶缂備礁顑呴鍡椕洪崸妤€妫?/h2>
+
+                        <div className="space-y-3 mb-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">Leaguepedia 闁荤姍鍕棩缂併劊鍔戝畷銉ヮ吋閸?/ URL</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white"
+                                    placeholder="LPL/2026 Season/Split 1 Playoffs"
+                                    value={playoffRefreshTournament}
+                                    onChange={(e) => setPlayoffRefreshTournament(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 mb-1">闂佸搫鐗滈崜娆忥耿鐎靛憡灏庢繛鎴烆殘閻ㄦ垿鏌ㄥ☉妯煎鐟滅増鐓￠弻鍛緞濞戞氨顦?/label>
+                                <select
+                                    className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white"
+                                    value={playoffRefreshLocalTournament}
+                                    onChange={(e) => setPlayoffRefreshLocalTournament(e.target.value)}
+                                >
+                                    <option value="">闂佺厧顨庢禍婊勬叏閳哄啯瀚氶柛鈩冾殔閻?/option>
+                                    {existingTournaments.map((t) => (
+                                        <option key={t} value={t}>
+                                            {t}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {playoffRefreshResult?.success !== undefined && (
+                            <div
+                                className={`mb-4 p-4 rounded-lg border overflow-y-auto max-h-60 ${
+                                    playoffRefreshResult.success ? 'bg-green-900/20 border-green-800' : 'bg-red-900/20 border-red-800'
+                                }`}
+                            >
+                                {playoffRefreshResult.success ? (
+                                    <>
+                                        <p className="font-bold text-green-400 mb-2">{playoffRefreshResult.message}</p>
+                                        <div className="space-y-1">
+                                            {playoffRefreshResult.details?.map((d: string, i: number) => (
+                                                <p key={i} className="text-xs text-slate-300">
+                                                    {d}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-red-400 font-bold">{playoffRefreshResult.error}</p>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 mt-auto pt-4 border-t border-slate-800">
+                            <button
+                                onClick={() => {
+                                    setIsPlayoffRefreshOpen(false);
+                                    setPlayoffRefreshResult(null);
+                                }}
+                                className="text-slate-400 hover:text-white px-4 py-2"
+                            >
+                                闂佺绻戞繛濠偽?                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (!playoffRefreshTournament.trim()) {
+                                        alert('闁荤姴娲ㄩ弻澶屾椤撱垹绀?Leaguepedia 闁荤姍鍕棩缂併劊鍔戝畷銉ヮ吋閸ュ棛鍋ら獮?URL');
+                                        return;
+                                    }
+                                    setLoading(true);
+                                    const res = await refreshPlayoffBracket(
+                                        playoffRefreshTournament.trim(),
+                                        playoffRefreshLocalTournament || undefined,
+                                    );
+                                    setPlayoffRefreshResult(res);
+                                    if (res.success) await handleSearch();
+                                    setLoading(false);
+                                }}
+                                disabled={loading}
+                                className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded font-bold"
+                            >
+                                {loading ? '闂佺懓鍢查ˇ顖濄亹閸ャ劎鈻?..' : '閻庢鍠掗崑鎾斥攽椤旂⒈鍎愭繛鎻掓健瀵?}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
+
+
+
+
+
+
+

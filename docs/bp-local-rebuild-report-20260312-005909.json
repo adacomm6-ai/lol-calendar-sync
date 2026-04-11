@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-03-11T16:59:09.314Z",
+  "backupPath": "D:\\LoL数据网页\\backups\\local-db\\dev-before-bp-rebuild-20260312-005909.db",
+  "demaciaRemoved": {
+    "matches": 7,
+    "games": 25,
+    "comments": 5,
+    "odds": 8
+  },
+  "players": {
+    "cleared": 210,
+    "inserted": 313
+  },
+  "seriesImported": {
+    "insertedMatches": 293,
+    "updatedMatches": 1,
+    "insertedGames": 677,
+    "overwrittenComments": 2,
+    "overwrittenOdds": 20
+  },
+  "finishedAt": "2026-03-11T16:59:09.707Z",
+  "counts": {
+    "teams": 65,
+    "players": 313,
+    "matches": 433,
+    "games": 1094,
+    "comments": 369,
+    "odds": 1211
+  }
+}

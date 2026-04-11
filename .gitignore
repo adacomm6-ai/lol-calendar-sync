@@ -1,0 +1,50 @@
+# Dependencies and build outputs
+node_modules/
+.next/
+__pycache__/
+*.pyc
+
+# Local runtime/cache artifacts
+.agent/
+.cache/
+.codex-*.js
+.codex-*.png
+codex-verify-*.html
+tmp/
+tmp_*
+tmp-*.log
+*.log
+*.pid
+.local-*.pid
+tsconfig.tsbuildinfo
+
+# Local backups and diagnostics
+backups/
+logs/
+local_start.err
+local_start.out
+local_start_err.log
+local_start_out.log
+dev_direct_err.log
+dev_direct_out.log
+
+# Local databases
+dev.db
+prisma/dev.db
+prisma/*.db
+data/*.db-shm
+data/*.db-wal
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local generated uploads and runtime data
+public/uploads/
+data/*.json
+data/*.xlsx
+
+# OS/editor noise
+Thumbs.db
+Desktop.ini

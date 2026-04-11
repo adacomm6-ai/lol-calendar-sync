@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id               String           @id @default(uuid())
+  name             String           @unique
+  shortName        String?
+  region           String
+  logo             String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  matchesAsB       Match[]          @relation("TeamB")
+  matchesAsA       Match[]          @relation("TeamA")
+  teamComments     TeamComment[]
+  playerRegistries PlayerRegistry[]
+}
+
+model Player {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  photo       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  assignments PlayerRegistry[]
+}
+
+model PlayerRegistry {
+  id        String   @id @default(uuid())
+  playerId  String
+  teamId    String
+  role      String
+  split     String
+  isCurrent Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, teamId, split])
+}
+
+model Match {
+  id         String    @id @default(uuid())
+  startTime  DateTime?
+  teamAId    String?
+  teamBId    String?
+  winnerId   String?
+  status     String    @default("SCHEDULED")
+  format     String    @default("BO3")
+  tournament String    @default("LPL")
+  stage      String    @default("Regular Season")
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  comments   Comment[]
+  games      Game[]
+  teamB      Team?     @relation("TeamB", fields: [teamBId], references: [id])
+  teamA      Team?     @relation("TeamA", fields: [teamAId], references: [id])
+  odds       Odds[]
+}
+
+model Game {
+  id              String   @id @default(uuid())
+  matchId         String
+  gameNumber      Int
+  winnerId        String?
+  duration        Int?
+  teamAStats      String?
+  teamBStats      String?
+  blueSideTeamId  String?
+  redSideTeamId   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  analysisData    String?
+  totalKills      Int?
+  blueKills       Int?
+  redKills        Int?
+  screenshot      String?
+  blueTenMinKills Int?
+  redTenMinKills  Int?
+  screenshot2     String?
+  match           Match    @relation(fields: [matchId], references: [id])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  matchId    String
+  gameNumber Int      @default(1)
+  content    String
+  author     String   @default("User")
+  type       String   @default("POST_MATCH")
+  createdAt  DateTime @default(now())
+  userId     String?
+  match      Match    @relation(fields: [matchId], references: [id])
+}
+
+model TeamComment {
+  id        String   @id @default(uuid())
+  teamId    String
+  content   String
+  author    String   @default("User")
+  createdAt DateTime @default(now())
+  userId    String?
+  team      Team     @relation(fields: [teamId], references: [id])
+}
+
+model Odds {
+  id         String   @id @default(uuid())
+  matchId    String
+  gameNumber Int      @default(1)
+  provider   String
+  type       String   @default("WINNER")
+  threshold  Float?
+  teamAOdds  Float
+  teamBOdds  Float
+  timestamp  DateTime @default(now())
+  match      Match    @relation(fields: [matchId], references: [id])
+}
+
+model Hero {
+  id        String   @id
+  name      String   @unique
+  alias     String?
+  title     String?
+  avatarUrl String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model UserProfile {
+  id        String   @id
+  name      String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SystemSettings {
+  id        String   @id @default("global")
+  data      String
+  updatedAt DateTime @updatedAt
+}
+
+

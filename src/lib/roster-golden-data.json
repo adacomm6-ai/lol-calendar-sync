@@ -1,0 +1,1251 @@
+[
+  {
+    "teamId": "af448571-1a12-45a7-919b-76595c09beec",
+    "teamName": "Weibo Gaming",
+    "players": [
+      {
+        "name": "Zika",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Jiejie",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Xiaohu",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Elk",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Erha",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "9a2fb4e6-a267-4563-9b81-5ecd507e4d6a",
+    "teamName": "Invictus Gaming",
+    "players": [
+      {
+        "name": "Soboro",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Rookie",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Photic",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Jwei",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Wei",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "RENARD",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "9cb94484-f890-42b7-889b-6a2975b654cb",
+    "teamName": "Top Esports",
+    "players": [
+      {
+        "name": "369",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "naiyou",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Creme",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "JIAQI",
+        "role": "ADC",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      },
+      {
+        "name": "FENGYUE",
+        "role": "SUPPORT",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      },
+      {
+        "name": "ZUIAN",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      },
+      {
+        "name": "NIA",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "be6aecf4-09e6-48c8-950a-21e09af4b8a3",
+    "teamName": "JD Gaming",
+    "players": [
+      {
+        "name": "Xiaoxu",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Vampire",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "HONGQ",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "JUNJIA",
+        "role": "JUNGLE",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      },
+      {
+        "name": "GALA",
+        "role": "ADC",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "54b7bb9f-61c9-4359-abee-6d77dc31a564",
+    "teamName": "LGD Gaming",
+    "players": [
+      {
+        "name": "SASI",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Heng",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Tangyuan",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "YCX",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Shaoye",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "edc497ca-5160-4284-b066-9d1d0403a3b0",
+    "teamName": "Ultra Prime",
+    "players": [
+      {
+        "name": "Liangchen",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Grizzly",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Saber",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Hena",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Xiaoxia",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "020ad6e7-54e8-495a-9e44-5df83e6c4b8d",
+    "teamName": "Anyone's Legend",
+    "players": [
+      {
+        "name": "Flandre",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Tarzan",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Shanks",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Hope",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Kael",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "YINOVA",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      },
+      {
+        "name": "GLFS",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      },
+      {
+        "name": "SINIAN",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      },
+      {
+        "name": "THEHANG",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      },
+      {
+        "name": "WUNAI3",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "57ecdb53-1c78-4219-9c58-b86a5f3a17e5",
+    "teamName": "Bilibili Gaming",
+    "players": [
+      {
+        "name": "Bin",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Xun",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Knight",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Viper",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "ON",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "21e288a8-ecca-495f-b32d-369313749b48",
+    "teamName": "LNG Esports",
+    "players": [
+      {
+        "name": "SHEER",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Croco",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "BULLDOG",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "1xn",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "MISSING",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "56732fa1-dbf0-48d2-97ff-1fa65126e9e8",
+    "teamName": "Team WE",
+    "players": [
+      {
+        "name": "Cube",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Monki",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Karis",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "About",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "YAOYAO",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "0c22c806-0565-447a-a246-2ad476e8f6e6",
+    "teamName": "EDward Gaming",
+    "players": [
+      {
+        "name": "Parukia",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Zdz",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Xiaohao",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Angel",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Leave",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      }
+    ]
+  },
+  {
+    "teamId": "0d900a1a-c0fc-4965-83c6-cc9844700ca1",
+    "teamName": "Ninjas in Pyjamas",
+    "players": [
+      {
+        "name": "Guwon",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Care",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Assum",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Zhuo",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "HOYA",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "4c6da8c9-d5b5-45e9-89cd-85ee696d90ad",
+    "teamName": "ThunderTalk Gaming",
+    "players": [
+      {
+        "name": "Junhao",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Feather",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Keshi",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Heru",
+        "role": "MID",
+        "split": "2026 LPL第一赛段"
+      },
+      {
+        "name": "Ryan3",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "1106f9a5-9cec-4569-bef4-bd7f6f648e70",
+    "teamName": "Oh My God",
+    "players": [
+      {
+        "name": "Hery",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Starry",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "Moham",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 25-26德玛西亚杯"
+      },
+      {
+        "name": "JUHAN",
+        "role": "JUNGLE",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      },
+      {
+        "name": "HAICHAD",
+        "role": "Unknown",
+        "split": "25-26德玛西亚杯, 2026 LPL第一赛段"
+      },
+      {
+        "name": "REO",
+        "role": "Unknown",
+        "split": "2026 LPL第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "7349112f-c324-46a0-9f84-08d0044c8c02",
+    "teamName": "T1",
+    "players": [
+      {
+        "name": "Doran",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Oner",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Faker",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Peyz",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Keria",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "e094d67d-fa57-43b8-985b-6821289db443",
+    "teamName": "Gen.G",
+    "players": [
+      {
+        "name": "Kiin",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Canyon",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Chovy",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Ruler",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Duro",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "2390c50a-8b2b-4ebb-8cf9-76551b15a8cb",
+    "teamName": "Hanwha Life Esports",
+    "players": [
+      {
+        "name": "Zeus",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Kanavi",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Zeka",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Gumayusi",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Delight",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "cbfbde96-6ebd-4269-a21b-49f821f996f2",
+    "teamName": "Dplus KIA",
+    "players": [
+      {
+        "name": "Siwoo",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Lucid",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Smash",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Career",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "ShowMaker",
+        "role": "MID",
+        "split": "2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "0d91c2a5-c9b8-4f21-bd59-afd2d5a2edfd",
+    "teamName": "KT Rolster",
+    "players": [
+      {
+        "name": "Cuzz",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Bdd",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Aiming",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Ghost",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Pollu",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "PerfecT",
+        "role": "TOP",
+        "split": "2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "2db63f3f-879f-4d25-866a-d5994467fb66",
+      "teamName": "KRX",
+    "players": [
+      {
+        "name": "Rich",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Jiwoo",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Andil",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Ucal",
+        "role": "MID",
+        "split": "Split 1, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Willer",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "c1cac45a-2a71-4090-8083-2126878d82f9",
+    "teamName": "BNK FEARX",
+    "players": [
+      {
+        "name": "Clear",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Raptor",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Diable",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Kellin",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "VicLa",
+        "role": "MID",
+        "split": "2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "e1d76c08-47ce-43e2-a32c-936d2ac99c7b",
+    "teamName": "Nongshim RedForce",
+    "players": [
+      {
+        "name": "Kingen",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Sponge",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Scout",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Taeyoon",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Lehends",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "229b2f0e-9a90-446e-a8c7-498cd98d068a",
+    "teamName": "OKSavingsBank BRION",
+    "players": [
+      {
+        "name": "Casting",
+        "role": "TOP",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Roamer",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Teddy",
+        "role": "ADC",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Namgung",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "GIDEON",
+        "role": "JUNGLE",
+        "split": "2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "d95e1b8d-3aa0-44b7-b124-cd30df83520f",
+    "teamName": "DN Freecs",
+    "players": [
+      {
+        "name": "Pyosik",
+        "role": "JUNGLE",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Clozer",
+        "role": "MID",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Peter",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "Life",
+        "role": "SUPPORT",
+        "split": "2026 LPL第一赛段, 2026 LCK第一赛段"
+      },
+      {
+        "name": "DuDu",
+        "role": "TOP",
+        "split": "2026 LCK第一赛段"
+      },
+      {
+        "name": "deokdam",
+        "role": "ADC",
+        "split": "2026 LCK第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "FNC",
+    "teamName": "FNC",
+    "players": [
+      {
+        "name": "123",
+        "role": "TOP",
+        "split": "2026 LEC第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "G2",
+    "teamName": "⁠G2 Esports",
+    "players": [
+      {
+        "name": "BrokenBlade",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "SkewMond",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Caps",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Hans Sama",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Labrov",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "1",
+    "teamName": "1",
+    "players": []
+  },
+  {
+    "teamId": "Cloud9",
+    "teamName": "Cloud9",
+    "players": [
+      {
+        "name": "Thanatos",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Blaber",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "APA",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Zven",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Vulcan",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "DCG",
+    "teamName": "Deep Cross Gaming",
+    "players": [
+      {
+        "name": "Flauren",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Pop9",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "HongSuo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Feng",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "ShiauC",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "SHG",
+    "teamName": "Fukuoka SoftBank HAWKS gaming ",
+    "players": [
+      {
+        "name": "Evi",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Van1",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Aria",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Marble",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Vsta",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "FURIA",
+    "teamName": "FURIA",
+    "players": [
+      {
+        "name": "Guigo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Tatu",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Tutsz",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Ayu",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "JoJo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "GX",
+    "teamName": "GIANTX",
+    "players": [
+      {
+        "name": "Lot",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "ISMA",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Jackies",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Noah",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Jun",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "KC",
+    "teamName": "Karmine Corp",
+    "players": [
+      {
+        "name": "Canna",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Yike",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "kyeahoo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Caliste",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Busio",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "LOUD",
+    "teamName": "LOUD",
+    "players": [
+      {
+        "name": "Xyno",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "YoungJae",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Envy",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Bull",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "RedBert",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "LYON",
+    "teamName": "LYON",
+    "players": [
+      {
+        "name": "Dhokla",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Inspired",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Saint",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Berserker",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Isles",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "MKOI",
+    "teamName": "⁠Movistar KOI",
+    "players": [
+      {
+        "name": "Myrwn",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Elyoya",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Jojopyun",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Supa",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Alvaro",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "RED Canids",
+    "teamName": "RED Canids",
+    "players": [
+      {
+        "name": "fNb",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Curse",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Kaze",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Rabelo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "frosty",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "Sentinels",
+    "teamName": "Sentinels",
+    "players": [
+      {
+        "name": "Impact",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "HamBak",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "DARKWINGS",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Rahel",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "huhi",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "Team Liquid",
+    "teamName": "Team Liquid",
+    "players": [
+      {
+        "name": "Morgan",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Josedeodo",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Quid",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Yeon",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "CoreJJ",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  },
+  {
+    "teamId": "TSW",
+    "teamName": "Team Secret Whales",
+    "players": [
+      {
+        "name": "Pun",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Hizto",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Dire",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Eddie",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      },
+      {
+        "name": "Bie",
+        "role": "Unknown",
+        "split": "2026 其他第一赛段"
+      }
+    ]
+  }
+]

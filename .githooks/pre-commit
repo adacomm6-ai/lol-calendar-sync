@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+deleted_count="$(git diff --cached --name-only --diff-filter=D | wc -l | tr -d ' ')"
+if [ "${ALLOW_MASS_DELETE:-0}" != "1" ] && [ "$deleted_count" -ge 15 ]; then
+  echo "pre-commit: 检测到一次性删除 $deleted_count 个文件，已拦截。"
+  echo "如果这是你明确确认的批量删除，再用 ALLOW_MASS_DELETE=1 重新提交。"
+  exit 1
+fi
+
+forbidden_paths='(^|/)(node_modules/|\.next/|backups/|logs/|tmp/)|(^|/)\.env($|[.])|(^|/)dev\.db$|(^|/)prisma/.*\.db$|\.log$|\.pid$|tsconfig\.tsbuildinfo$'
+staged_names="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+if [ -n "$staged_names" ]; then
+  echo "$staged_names" | grep -E "$forbidden_paths" >/dev/null 2>&1 && {
+    echo "pre-commit: 检测到不应提交的本地文件或产物，已拦截。"
+    echo "请从暂存区移除 .env / 数据库 / 备份 / 日志 / 构建产物后再提交。"
+    exit 1
+  }
+fi
+
+exit 0

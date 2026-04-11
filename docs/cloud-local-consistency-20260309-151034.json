@@ -1,0 +1,62 @@
+{
+  "checkedAt": "2026-03-09T07:10:34.215Z",
+  "localDb": "D:\\lol-data-system\\prisma\\dev.db",
+  "tables": [
+    {
+      "table": "Team",
+      "local": 38,
+      "cloud": 38,
+      "match": true
+    },
+    {
+      "table": "Player",
+      "local": 205,
+      "cloud": 205,
+      "match": true
+    },
+    {
+      "table": "Match",
+      "local": 146,
+      "cloud": 146,
+      "match": true
+    },
+    {
+      "table": "Game",
+      "local": 428,
+      "cloud": 428,
+      "match": true
+    },
+    {
+      "table": "Comment",
+      "local": 376,
+      "cloud": 376,
+      "match": true
+    },
+    {
+      "table": "TeamComment",
+      "local": 24,
+      "cloud": 24,
+      "match": true
+    },
+    {
+      "table": "Odds",
+      "local": 1232,
+      "cloud": 1232,
+      "match": true
+    },
+    {
+      "table": "Hero",
+      "local": 172,
+      "cloud": 172,
+      "match": true
+    },
+    {
+      "table": "GameVersionRule",
+      "local": 9,
+      "cloud": 9,
+      "match": true
+    }
+  ],
+  "mismatchCount": 0,
+  "pass": true
+}

@@ -1,0 +1,1032 @@
+
+'use server';
+
+import { prisma } from '@/lib/db';
+import { revalidatePath, unstable_noStore as noStore } from 'next/cache';
+import { hasRuleOverlap, inferMatchRegion, normalizeGameVersionValue, normalizeRuleRegion, resolveGameVersionForMatch } from '@/lib/game-version';
+
+export type MatchFormData = {
+    id?: string;
+    startTime: string; // ISO string from datetime-local
+    teamAId: string | null;
+    teamBId: string | null;
+    status: string; // 'SCHEDULED', 'FINISHED', 'LIVE'
+    format: string; // 'BO1', 'BO3', 'BO5'
+    tournament: string; // '2026 LPL Split 1'
+    stage: string; // 'Split 1', 'Playoffs'
+    gameVersion?: string | null;
+    // teamAParentMatchId?: string | null;
+    // teamAParentType?: string | null;
+    // teamBParentMatchId?: string | null;
+    // teamBParentType?: string | null;
+};
+
+export type GameVersionRuleFormData = {
+    id?: string;
+    region: string;
+    version: string;
+    effectiveFrom: string;
+    effectiveTo?: string | null;
+    note?: string | null;
+};
+
+const TEAM_LIGHT_SELECT = {
+    id: true,
+    name: true,
+    shortName: true,
+    region: true,
+    logo: true,
+};
+
+function resolveDate(value?: string | null): Date | null {
+    if (!value) return null;
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function trimOptional(value?: string | null): string | null {
+    const text = (value || '').trim();
+    return text.length > 0 ? text : null;
+}
+
+async function revalidateMatchViews(matchId?: string) {
+    revalidatePath('/schedule');
+    revalidatePath('/admin/schedule');
+    revalidatePath('/');
+    if (matchId) revalidatePath(`/match/${matchId}`);
+}
+
+async function resolveVersionForPayload(params: {
+    startTime?: Date | null;
+    tournament?: string;
+    teamARegion?: string | null;
+    teamBRegion?: string | null;
+    regionHint?: string | null;
+}): Promise<string | null> {
+    if (!params.startTime) return null;
+    return await resolveGameVersionForMatch({
+        startTime: params.startTime,
+        tournament: params.tournament,
+        teamARegion: params.teamARegion,
+        teamBRegion: params.teamBRegion,
+        regionHint: params.regionHint,
+    });
+}
+
+async function backfillMissingGameVersionsInternal(region?: string) {
+    const normalizedRegion = region ? normalizeRuleRegion(region) : null;
+
+    const where: Record<string, any> = {
+        gameVersion: null,
+        startTime: { not: null },
+    };
+
+    if (normalizedRegion && normalizedRegion !== 'GLOBAL') {
+        where.OR = [
+            { tournament: { contains: normalizedRegion } },
+            { teamA: { region: { contains: normalizedRegion } } },
+            { teamB: { region: { contains: normalizedRegion } } },
+        ];
+    }
+
+    const matches = await prisma.match.findMany({
+        where,
+        include: {
+            teamA: { select: { region: true } },
+            teamB: { select: { region: true } },
+        },
+        orderBy: { startTime: 'asc' },
+    });
+
+    let updated = 0;
+
+    for (const match of matches) {
+        const version = await resolveVersionForPayload({
+            startTime: match.startTime,
+            tournament: match.tournament,
+            teamARegion: match.teamA?.region || null,
+            teamBRegion: match.teamB?.region || null,
+            regionHint: normalizedRegion,
+        });
+
+        if (!version) continue;
+
+        await prisma.match.update({
+            where: { id: match.id },
+            data: { gameVersion: version },
+        });
+        updated++;
+    }
+
+    return updated;
+}
+
+export async function getGameVersionRules(region?: string) {
+    try {
+        const normalized = region && region !== 'ALL' ? normalizeRuleRegion(region) : null;
+        const rules = await prisma.gameVersionRule.findMany({
+            where: normalized ? { region: normalized } : undefined,
+            orderBy: [{ region: 'asc' }, { effectiveFrom: 'desc' }],
+        });
+        return {
+            success: true,
+            rules: rules.map((rule) => ({
+                ...rule,
+                version: normalizeGameVersionValue(rule.version, rule.effectiveFrom),
+            })),
+        };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function upsertGameVersionRule(data: GameVersionRuleFormData) {
+    try {
+        const region = normalizeRuleRegion(data.region);
+        const effectiveFrom = resolveDate(data.effectiveFrom);
+        const effectiveTo = resolveDate(data.effectiveTo || null);
+        const version = normalizeGameVersionValue((data.version || '').trim(), effectiveFrom);
+
+        if (!version) return { success: false, error: 'Version is required.' };
+        if (!effectiveFrom) return { success: false, error: 'Invalid effectiveFrom datetime.' };
+        if (effectiveTo && effectiveTo < effectiveFrom) {
+            return { success: false, error: 'effectiveTo must be later than effectiveFrom.' };
+        }
+
+        const rulesInRegion = await prisma.gameVersionRule.findMany({
+            where: data.id
+                ? {
+                    region,
+                    NOT: { id: data.id },
+                }
+                : { region },
+            orderBy: { effectiveFrom: 'asc' },
+        });
+
+        const conflict = rulesInRegion.find((rule) =>
+            hasRuleOverlap({
+                incomingFrom: effectiveFrom,
+                incomingTo: effectiveTo,
+                existingFrom: rule.effectiveFrom,
+                existingTo: rule.effectiveTo,
+            })
+        );
+
+        if (conflict) {
+            return {
+                success: false,
+                error: `Rule overlap detected with ${conflict.version} (${conflict.effectiveFrom.toISOString()} - ${conflict.effectiveTo ? conflict.effectiveTo.toISOString() : 'OPEN'})`,
+            };
+        }
+
+        if (data.id) {
+            await prisma.gameVersionRule.update({
+                where: { id: data.id },
+                data: {
+                    region,
+                    version,
+                    effectiveFrom,
+                    effectiveTo,
+                    note: trimOptional(data.note),
+                },
+            });
+        } else {
+            await prisma.gameVersionRule.create({
+                data: {
+                    region,
+                    version,
+                    effectiveFrom,
+                    effectiveTo,
+                    note: trimOptional(data.note),
+                },
+            });
+        }
+
+        const backfilled = await backfillMissingGameVersionsInternal(region);
+
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+
+        return { success: true, backfilled };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function deleteGameVersionRule(id: string) {
+    try {
+        await prisma.gameVersionRule.delete({ where: { id } });
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function backfillMissingGameVersions(region?: string) {
+    try {
+        const backfilled = await backfillMissingGameVersionsInternal(region);
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+        return { success: true, backfilled };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function updateMatchGameVersion(matchId: string, gameVersion?: string | null) {
+    try {
+        if (!matchId) return { success: false, error: 'Missing matchId.' };
+
+        const match = await prisma.match.findUnique({
+            where: { id: matchId },
+            include: {
+                teamA: { select: { region: true } },
+                teamB: { select: { region: true } },
+            },
+        });
+
+        if (!match) return { success: false, error: 'Match not found.' };
+
+        const manualValueRaw = trimOptional(gameVersion);
+        const manualValue = manualValueRaw
+            ? normalizeGameVersionValue(manualValueRaw, match.startTime || null)
+            : null;
+        const resolvedValue = manualValue || (await resolveVersionForPayload({
+            startTime: match.startTime,
+            tournament: match.tournament,
+            teamARegion: match.teamA?.region || null,
+            teamBRegion: match.teamB?.region || null,
+        }));
+
+        await prisma.match.update({
+            where: { id: matchId },
+            data: { gameVersion: resolvedValue },
+        });
+
+        await revalidateMatchViews(matchId);
+        return { success: true, gameVersion: resolvedValue };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function updateMatchStage(matchId: string, stage: string) {
+    try {
+        if (!matchId) return { success: false, error: 'Missing matchId.' };
+        const stageValue = (stage || '').trim();
+        if (!stageValue) return { success: false, error: 'Stage is required.' };
+
+        await prisma.match.update({
+            where: { id: matchId },
+            data: { stage: stageValue },
+        });
+
+        await revalidateMatchViews(matchId);
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function bulkUpdateMatches(
+    matchIds: string[],
+    updates: {
+        tournament?: string;
+        stage?: string;
+        format?: string;
+        status?: string;
+        gameVersion?: string | null;
+    },
+) {
+    try {
+        const ids = (matchIds || []).filter(Boolean);
+        if (ids.length === 0) return { success: false, error: 'No matches selected.' };
+        if (ids.length > 2000) return { success: false, error: 'Too many matches in one batch.' };
+
+        const data: Record<string, any> = {};
+
+        if (typeof updates.tournament === 'string' && updates.tournament.trim()) {
+            data.tournament = updates.tournament.trim();
+        }
+        if (typeof updates.stage === 'string' && updates.stage.trim()) {
+            data.stage = updates.stage.trim();
+        }
+        if (typeof updates.format === 'string' && updates.format.trim()) {
+            data.format = updates.format.trim().toUpperCase();
+        }
+        if (typeof updates.status === 'string' && updates.status.trim()) {
+            data.status = updates.status.trim().toUpperCase();
+        }
+        if (updates.gameVersion !== undefined) {
+            data.gameVersion = trimOptional(updates.gameVersion);
+        }
+
+        const keys = Object.keys(data);
+        if (keys.length === 0) return { success: false, error: 'No valid update fields.' };
+
+        const result = await prisma.match.updateMany({
+            where: { id: { in: ids } },
+            data,
+        });
+
+        await revalidateMatchViews();
+        return { success: true, count: result.count };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}export async function getTeamsInput() {
+    try {
+        const teams = await prisma.team.findMany({
+            orderBy: { shortName: 'asc' },
+            select: { id: true, name: true, shortName: true, region: true }
+        });
+        return { success: true, teams };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function getTournaments() {
+    try {
+        // 1. Get tournaments that already have matches
+        const existing = await prisma.match.groupBy({
+            by: ['tournament'],
+            orderBy: { tournament: 'asc' },
+        });
+        const existingNames = existing.map(t => t.tournament);
+
+        // 2. Load system config to generate potential tournament names
+        const { getSystemConfig } = await import('@/lib/config-service');
+        const config = await getSystemConfig();
+
+        const generatedNames: string[] = [];
+        const currentYear = config.defaultYear || new Date().getFullYear().toString();
+
+        // Generate potential names based on splits and regions
+        config.splits.forEach(split => {
+            const mapping = split.mapping;
+            if (!mapping) return;
+
+            if (split.regions && split.regions.length > 0) {
+                // If regions are specified, only generate region-prefixed names
+                split.regions.forEach(regId => {
+                    // Standard: "2026 LPL缂佹鍏涚粩瀵告導濞戞瑯鍞?
+                    generatedNames.push(`${currentYear} ${regId}${mapping}`);
+                });
+            } else {
+                // For global splits (no regions), generate global names
+                // e.g. "2026 MSI", "2026 Worlds"
+                if (mapping.length > 2) { // Only if it's descriptive enough
+                    generatedNames.push(`${currentYear} ${mapping}`);
+                }
+                generatedNames.push(mapping);
+            }
+        });
+
+        // Combine and deduplicate
+        const allTournaments = Array.from(new Set([...existingNames, ...generatedNames])).sort();
+
+        return { success: true, tournaments: allTournaments };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function getTournamentMatches(tournament: string) {
+    noStore(); // Prevents Next.js from caching this server action result
+    try {
+        const matches = await prisma.match.findMany({
+            where: { tournament },
+            include: {
+                teamA: { select: TEAM_LIGHT_SELECT },
+                teamB: { select: TEAM_LIGHT_SELECT },
+            },
+            orderBy: { startTime: 'asc' }
+            // No limit here because we need the full bracket
+        });
+        return { success: true, matches };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function searchMatches(date?: string, region?: string) {
+    try {
+        const where: Record<string, any> = {};
+
+        if (date === 'ALL') {
+            // Skip date filter
+        } else if (date) {
+            const start = new Date(date);
+            const end = new Date(date);
+            end.setDate(end.getDate() + 1);
+            where.startTime = { gte: start, lt: end };
+        } else {
+            // Default behavior: Upcoming
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            where.startTime = { gte: yesterday };
+        }
+
+        if (region) {
+            where.OR = [
+                { tournament: { contains: region } },
+                { teamA: { region: { contains: region } } },
+                { teamB: { region: { contains: region } } }
+            ];
+        }
+
+        const matches = await prisma.match.findMany({
+            where,
+            include: {
+                teamA: { select: TEAM_LIGHT_SELECT },
+                teamB: { select: TEAM_LIGHT_SELECT },
+            },
+            orderBy: { startTime: 'asc' },
+            take: (date === 'ALL' || region) ? 1000 : 50
+        });
+
+        const serialized = matches.map(m => ({
+            ...m,
+        }));
+
+        return { success: true, matches: serialized };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function upsertMatch(data: MatchFormData) {
+    try {
+        const startTime = data.startTime ? new Date(data.startTime) : null;
+
+        const teamA = data.teamAId
+            ? await prisma.team.findUnique({ where: { id: data.teamAId }, select: { region: true } })
+            : null;
+        const teamB = data.teamBId
+            ? await prisma.team.findUnique({ where: { id: data.teamBId }, select: { region: true } })
+            : null;
+
+        const manualVersionRaw = trimOptional(data.gameVersion);
+        const manualVersion = manualVersionRaw
+            ? normalizeGameVersionValue(manualVersionRaw, startTime || null)
+            : null;
+        const autoVersion = manualVersion
+            ? null
+            : await resolveVersionForPayload({
+                startTime,
+                tournament: data.tournament,
+                teamARegion: teamA?.region || null,
+                teamBRegion: teamB?.region || null,
+            });
+
+        const payload = {
+            startTime: startTime || undefined,
+            teamAId: data.teamAId || null,
+            teamBId: data.teamBId || null,
+            status: data.status,
+            format: data.format,
+            tournament: data.tournament,
+            stage: data.stage,
+            gameVersion: manualVersion || autoVersion || null,
+        };
+
+        const savedMatch = data.id
+            ? await prisma.match.update({
+                  where: { id: data.id },
+                  data: payload,
+                  include: {
+                      teamA: { select: TEAM_LIGHT_SELECT },
+                      teamB: { select: TEAM_LIGHT_SELECT },
+                  },
+              })
+            : await prisma.match.create({
+                  data: payload,
+                  include: {
+                      teamA: { select: TEAM_LIGHT_SELECT },
+                      teamB: { select: TEAM_LIGHT_SELECT },
+                  },
+              });
+
+        await revalidateMatchViews(data.id);
+        return { success: true, match: savedMatch };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function deleteMatch(id: string) {
+    try {
+        await prisma.game.deleteMany({ where: { matchId: id } });
+        await prisma.match.delete({ where: { id } });
+
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function importMatches(data: string, region: string, defaultStage: string = 'Regular Season') {
+    try {
+        let matchesToInsert: Array<{
+            startTime: string;
+            teamAId: string;
+            teamBId: string;
+            status: string;
+            format: string;
+            tournament: string;
+            stage: string;
+        }> = [];
+
+        try {
+            const json = JSON.parse(data);
+            if (Array.isArray(json)) {
+                matchesToInsert = json.map((item) => ({
+                    ...item,
+                    stage: (item.stage || defaultStage || 'Regular Season').trim(),
+                }));
+            }
+        } catch (e) {
+            const lines = data.split('\n').filter(l => l.trim());
+
+            const teams = await prisma.team.findMany({ select: { id: true, name: true, shortName: true } });
+            const teamMap = new Map();
+            teams.forEach(t => {
+                if (t.shortName) teamMap.set(t.shortName.toLowerCase(), t.id);
+                teamMap.set(t.name.toLowerCase(), t.id);
+            });
+
+            for (const line of lines) {
+                const parts = line.trim().split(/\s+/);
+                if (parts.length >= 4) {
+                    const dateStr = parts[0];
+                    const timeStr = parts[1];
+                    let teamAStr = parts[2];
+                    let teamBStr = parts[parts.length - 1];
+
+                    if (parts.includes('vs')) {
+                        const vsIndex = parts.indexOf('vs');
+                        teamAStr = parts.slice(2, vsIndex).join(' ');
+                        teamBStr = parts.slice(vsIndex + 1).join(' ');
+                    }
+
+                    const teamAId = teamMap.get(teamAStr.toLowerCase());
+                    const teamBId = teamMap.get(teamBStr.toLowerCase());
+
+                    if (teamAId && teamBId) {
+                        const isoString = `${dateStr}T${timeStr}:00+08:00`;
+
+                        matchesToInsert.push({
+                            startTime: isoString,
+                            teamAId,
+                            teamBId,
+                            status: 'SCHEDULED',
+                            format: 'BO3',
+                            tournament: `2026 ${region} Split 1`,
+                            stage: (defaultStage || 'Regular Season').trim()
+                        });
+                    }
+                }
+            }
+        }
+
+        if (matchesToInsert.length === 0) {
+            return { success: false, error: 'No valid matches found to import.' };
+        }
+
+                const operations: any[] = [];
+        for (const m of matchesToInsert) {
+            const startAt = new Date(m.startTime);
+            const autoVersion = await resolveVersionForPayload({
+                startTime: startAt,
+                tournament: m.tournament,
+                regionHint: region,
+            });
+
+            operations.push(
+                prisma.match.create({
+                    data: {
+                        startTime: startAt,
+                        teamAId: m.teamAId,
+                        teamBId: m.teamBId,
+                        status: m.status,
+                        format: m.format,
+                        tournament: m.tournament,
+                        stage: m.stage,
+                        gameVersion: autoVersion || null,
+                    }
+                })
+            );
+        }
+
+        await prisma.$transaction(operations);
+
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+        return { success: true, count: matchesToInsert.length };
+
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+import { fetchTournamentMatches, resolveTournament, fetchPlayoffResults } from '@/lib/leaguepedia';
+
+export async function importFromWiki(input: string) {
+    try {
+        const tournamentName = await resolveTournament(input);
+        const wikiMatches = await fetchTournamentMatches(tournamentName);
+        if (wikiMatches.length === 0) {
+            return { success: false, error: `No future matches found for tournament '${tournamentName}' (Input: ${input}).` };
+        }
+
+        // Map teams
+        const teams = await prisma.team.findMany({ select: { id: true, name: true, shortName: true } });
+        const teamMap = new Map();
+        teams.forEach(t => {
+            if (t.shortName) teamMap.set(t.shortName.toLowerCase(), t.id);
+            teamMap.set(t.name.toLowerCase(), t.id);
+        });
+
+        const matchesToInsert: Array<{
+            startTime: string;
+            teamAId: string;
+            teamBId: string;
+            status: string;
+            format: string;
+            tournament: string;
+            stage: string;
+        }> = [];
+        const skipped: string[] = [];
+
+        for (const m of wikiMatches) {
+            const teamAId = teamMap.get(m.team1.toLowerCase());
+            const teamBId = teamMap.get(m.team2.toLowerCase());
+
+            if (teamAId && teamBId) {
+                // Leaguepedia returns UTC string "YYYY-MM-DD HH:mm:ss"
+                // Our system treats ISO strings with offset.
+                // "2026-02-01 09:00:00" (UTC) -> "2026-02-01T09:00:00Z"
+                const isoString = m.date.replace(' ', 'T') + 'Z';
+
+                // Check if exists?
+                // For simplicity, we just prepare them. Application logic or UI should confirm.
+                // Or we just insert and rely on manual conflict check or distinct?
+                // Let's check existence by time and teams to avoid duplicates.
+                const exists = await prisma.match.findFirst({
+                    where: {
+                        startTime: new Date(isoString),
+                        OR: [
+                            { teamAId: teamAId, teamBId: teamBId },
+                            { teamAId: teamBId, teamBId: teamAId }
+                        ]
+                    }
+                });
+
+                if (!exists) {
+                    matchesToInsert.push({
+                        startTime: isoString,
+                        teamAId,
+                        teamBId,
+                        status: 'SCHEDULED',
+                        format: 'BO3', // Wiki default?
+                        tournament: m.tournament,
+                        stage: 'Regular Season' // Wiki might not give stage clearly in this query
+                    });
+                } else {
+                    skipped.push(`${m.team1} vs ${m.team2} @ ${m.date}`);
+                }
+            } else {
+                skipped.push(`Unknown Team: ${m.team1} or ${m.team2}`);
+            }
+        }
+
+        if (matchesToInsert.length > 0) {
+            const operations: any[] = [];
+
+            for (const m of matchesToInsert) {
+                const startAt = new Date(m.startTime);
+                const autoVersion = await resolveVersionForPayload({
+                    startTime: startAt,
+                    tournament: m.tournament,
+                });
+
+                operations.push(
+                    prisma.match.create({
+                        data: {
+                            startTime: startAt,
+                            teamAId: m.teamAId,
+                            teamBId: m.teamBId,
+                            status: m.status,
+                            format: m.format,
+                            tournament: m.tournament,
+                            stage: m.stage,
+                            gameVersion: autoVersion || null,
+                        }
+                    })
+                );
+            }
+
+            await prisma.$transaction(operations);
+        }
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+
+        return {
+            success: true,
+            count: matchesToInsert.length,
+            skippedCount: skipped.length,
+            message: `Imported ${matchesToInsert.length} matches. Skipped ${skipped.length}.`
+        };
+
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+export async function generatePlayoffBracket(
+    tournament: string,
+    nodes: {
+        startTime: string,
+        stage: string,
+        format: string,
+        teamAId: string | null,
+        teamBId: string | null
+    }[]
+) {
+    try {
+        if (!nodes || nodes.length === 0) {
+            return { success: false, error: 'No matches provided.' };
+        }
+
+        const operations: any[] = [];
+
+        for (const n of nodes) {
+            const startAt = new Date(n.startTime);
+            const autoVersion = await resolveVersionForPayload({
+                startTime: startAt,
+                tournament,
+            });
+
+            operations.push(
+                prisma.match.create({
+                    data: {
+                        startTime: startAt,
+                        teamAId: n.teamAId,
+                        teamBId: n.teamBId,
+                        status: 'SCHEDULED',
+                        format: n.format || 'BO5',
+                        tournament,
+                        stage: n.stage,
+                        gameVersion: autoVersion || null,
+                    }
+                })
+            );
+        }
+
+        await prisma.$transaction(operations);
+
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+        return { success: true, count: nodes.length };
+
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * 婵烇絾蓱閸楁垹鎸у☉娆愵仭闁煎疇妫勯幃鎾愁潰閵夘垳绐楅柨鐔虹オeaguepedia 闁瑰嘲顦ぐ鍥ь啅閹绘帞鏆氶悹褎绋掗弳鐔煎箲椤曞棛绀夐柟绋款樀濡诧箓鏁撻懞銉︼級闁哄牏鍠嶇粭宀勫嫉椤掆偓濠€瀵告導濞戞埃鏌ら柛鏍х秺閸樸倝鏁?
+ * - 闁告牕缍婇崢銈夊礆閹殿喗鐣遍柡鍫墮濠€?TBD 闁革妇鍎ら?闁跨喕妫勫ú鏍ㄧ箙椤愶附袝濞寸厧绉查埀顑胯兌缁劑寮稿┃搴撳亾娴ｅ搫笑闁?
+ * - 鐎圭寮跺﹢浣衡偓鐟版湰閺嗭綁寮悧鍫濈ウ闁汇劌瀚┃鈧柨鐔告灮閹烽鎹勭€圭姷绠? * - LP 闁哄牆顦徊楣冨嫉椤掆偓濠€瀛樼▔瀹ュ懐鎽犻柛锔哄妿濞堟垿宕烽悜姗嗗仹 闁跨喎鈧喎娈伴柛鏂诲妽閺???
+ *
+ * @param lpTournamentInput - Leaguepedia 閻犙勭◥缁ㄣ劑宕ュ鍥?URL闁挎稑鐗婇弳鐔煎箲椤旇姤闄嶆繝褎鍔х槐?
+ * @param localTournament - 闁哄牜鍓欏﹢瀵告導濞戞鐨戦柛姘Ф琚ㄩ柨娑樼墕鐏忣噣鏌婂鍥ㄧ獥闁哄秴娴勭槐婵嬫晸?26 LPL缂佹鍏涚粩瀵告導濞戞瑯鍞?闁挎稑顧€缁辨繈鎮惧▎鎴旀晞闁告帗鐟ㄩ崵婊堝礉閵娿劎妲曢柨?
+ */
+export async function refreshPlayoffBracket(lpTournamentInput: string, localTournament?: string) {
+    try {
+        const tournamentName = await resolveTournament(lpTournamentInput);
+        console.log(`[Playoff Sync] LP tournament resolved: ${tournamentName}`);
+
+        const lpResults = await fetchPlayoffResults(tournamentName);
+        if (lpResults.length === 0) {
+            return { success: false, error: `Leaguepedia 闁哄牜浜ｇ换鎴﹀炊閻愮増宕插ù锝嗘礀閸戯紕鈧懓鐭佺粋宀勫极閻楀牆绁? ${tournamentName}` };
+        }
+        console.log(`[Playoff Sync] Got ${lpResults.length} completed series from LP`);
+
+        // 闁哄瀚紓鎾绘⒓閻斿墎绀婇柨鐔告灮閹风īD 闁哄嫮濮撮惃?
+        const allTeams = await prisma.team.findMany({ select: { id: true, name: true, shortName: true } });
+        const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const resolveTeamId = (name: string): string | null => {
+            const n = norm(name);
+            let t = allTeams.find(x => norm(x.shortName || '') === n);
+            if (!t) t = allTeams.find(x => norm(x.name) === n);
+            // 婵☆垽绱曠涵锕傚礌瑜版帒甯抽柨娑欑摢Top Esports` 闁跨喓绂嘥ES`, `JD Gaming` 闁跨喓绂嘕DG` 闁?
+            if (!t) t = allTeams.find(x => norm(x.name).includes(n) || n.includes(norm(x.name)));
+            return t?.id || null;
+        };
+
+        // 缁绢収鍠栭悾楣冨嫉椤掆偓濠€?tournament 閺夆晛娲﹂幎銈夊级閳ュ弶顐?        let localTournamentFilter = localTournament?.trim() || '';
+        if (!localTournamentFilter) {
+            const leagueMatch = tournamentName.match(/(LPL|LCK|LEC|LCS)/i);
+            if (leagueMatch) {
+                localTournamentFilter = leagueMatch[1].toUpperCase();
+            }
+        }
+
+        // 闁哄被鍎撮妤呭嫉椤掆偓濠€瀵告導濞戞埃鏌ら柨娑欐皑閺併倝骞嬮柨瀣樄閻庤鐭花锛勨偓鐟版湰閺嗭絿鎸у☉妤冪殤闁告艾绉撮崹顖滃垝閸撗€鈧﹢宕犺ぐ鎺戝赋闁挎稑鑻幆渚€宕氬▎鎰樆闁艰鲸妫佺粋宀勫冀閸ヮ亞妲?婵烇絾蓱閸楁垿鏁撶徊鐚糰ge 閺夆晛娲﹂幎?
+        const playoffStageKeywords = ['Bracket', 'Semifinal', 'Final', 'Lower', 'Upper', 'Grand', 'Playoff', 'Playoffs', 'Play-In'];
+        const isExactTournament = localTournament && localTournament.trim().length > 5;
+
+        const localMatches = await prisma.match.findMany({
+            where: isExactTournament
+                ? { tournament: localTournament!.trim() }
+                : localTournamentFilter
+                    ? {
+                        tournament: { contains: localTournamentFilter },
+                        OR: playoffStageKeywords.map(kw => ({ stage: { contains: kw } }))
+                    }
+                    : { OR: playoffStageKeywords.map(kw => ({ stage: { contains: kw } })) },
+            include: { teamA: true, teamB: true },
+            orderBy: { startTime: 'asc' }
+        });
+
+        console.log(`[Playoff Sync] Found ${localMatches.length} local matches under "${localTournamentFilter}"`);
+
+        let updated = 0;
+        let created = 0;
+        let skipped = 0;
+        const details: string[] = [];
+
+        // 闁告瑯鍨辩粔椋庢嫻閸︻厽鐣遍柡鍫墮濠€鎾捶閻戞﹩鍋ч柛鎿冨灡濠€浼存晬閸繂鐖遍梺鏉跨Т閹绮旀繝姘彑闂侇剙鐏濋崢銈夋煂瀹ュ拋妲婚柨?
+        const availableLocal = [...localMatches];
+
+        for (const lp of lpResults) {
+            const teamAId = resolveTeamId(lp.team1);
+            const teamBId = resolveTeamId(lp.team2);
+            const winnerId = resolveTeamId(lp.winner);
+
+            if (!teamAId || !teamBId) {
+                details.push(`闁宠法濯寸粭?闂傚啰鍠嶇槐鐐哄嫉椤忓懎顥濋柨?{lp.team1} / ${lp.team2}`);
+                continue;
+            }
+
+            const lpDate = lp.date.replace(' ', 'T') + 'Z';
+            const lpTime = new Date(lpDate).getTime();
+
+            // 缂佹稒鐗滈弳?1闁挎稒宀稿Σ锔藉瀹ュ懎鐖遍柨鐔告灮閹烽攱瀵煎Ο鍝勫弗闁告牕缍婇崢?TBD/闁哄牜浜滈悾顒傛導濞戞粠鍞剁憸鐗堟穿缁辨繈宕楅懜娈垮仹闁告牕缍婇崢銈咁啅閸欏绠掗梻鍐枍缁辩偤鎯冮崟顒佸紦閻庣懓鐭佺粋宀€鎷嬮弶璺ㄧЭ
+            const lpPair = [teamAId, teamBId].sort();
+            let matchIdx = -1;
+
+            // 1a: 闁稿繐鐗婃竟姗€寮垫径灞剧ゲ闁告艾鐭傚Σ锔藉瀹ュ嫮绋婚柡鍫簻閻ｎ剛鎸у☉姘暠闁挎稑鐗撳〒鍓佹啺娴ｈ绾柡鍌涘婵悂鏁撻崐鐔峰姀闁哄倸婀卞▓???
+            matchIdx = availableLocal.findIndex(m => {
+                if (!m.teamAId || !m.teamBId) return false;
+                if (m.status === 'FINISHED' && m.winnerId) return false;
+                const localPair = [m.teamAId, m.teamBId].sort();
+                return localPair[0] === lpPair[0] && localPair[1] === lpPair[1];
+            });
+
+            // 1b: 濠碘€冲€归悘?1a 婵炲备鍓濇竟姗€宕氱敮顔剧闁告劕绉垫竟妯侯啅閹绘帞鏆氶悹褎绋撳▓鎴﹀触瀹€鍕曢悗鐢垫嚀閻剟鏁嶉崼銏℃殢濞存粌姘﹂悜锔芥交閸ラ绀?            if (matchIdx < 0) {
+                matchIdx = availableLocal.findIndex(m => {
+                    if (!m.teamAId || !m.teamBId) return false;
+                    const localPair = [m.teamAId, m.teamBId].sort();
+                    return localPair[0] === lpPair[0] && localPair[1] === lpPair[1];
+                });
+            }
+
+            // 缂佹稒鐗滈弳?2闁挎稒鐡朆D 缂佸苯鎼敍鎾诲礌瑜版帒甯?闁跨喕濮ゆ竟姗€宕氶悧鍫燂級闁哄牏鍠愬〒鍫曟焽閺勫繒绠柨鐔虹ゴBD 缂佸苯鎼敍?
+            if (matchIdx < 0) {
+                let bestIdx = -1;
+                let bestDiff = Infinity;
+                availableLocal.forEach((m, i) => {
+                    // 闁告牕缍婇崢銈夊级閳ュ弶顐介柨娑欎亢閸わ妇浜搁幋婊咁伇濞戞搩浜Σ锔藉瀹ュ嫯绀嬬紒宀€灏ㄧ槐姗矪D闁挎稑顧€缁辨繃绋夐弮鍌毿﹂柟顑挎鐠?SCHEDULED
+                    if ((!m.teamAId || !m.teamBId) && m.status === 'SCHEDULED' && m.startTime) {
+                        const diff = Math.abs(new Date(m.startTime).getTime() - lpTime);
+                        if (diff < bestDiff) {
+                            bestDiff = diff;
+                            bestIdx = i;
+                        }
+                    }
+                });
+                // 闁规亽鍎辫ぐ?30 濠㈠灈鏅涢崬鎾儍閸曨剚浠橀梺顓熸缁?TBD
+                if (bestIdx >= 0 && bestDiff < 30 * 24 * 60 * 60 * 1000) {
+                    matchIdx = bestIdx;
+                }
+            }
+
+            if (matchIdx >= 0) {
+                const localMatch = availableLocal[matchIdx];
+
+                // 鐎圭寮跺﹢浣衡偓鐟版湰閺嗭綁寮悧鍫濈ウ闁挎稑婀桰NISHED + 闁告瑥鏈弻鐔兼⒓閻斿墎绀?+ 闁艰櫕绮嶉弻鐔兼晬婢跺棗鏅?閻犲搫鐤囩换?
+                if (localMatch.status === 'FINISHED' && localMatch.teamAId && localMatch.teamBId && localMatch.winnerId) {
+                    skipped++;
+                    availableLocal.splice(matchIdx, 1);
+                    continue;
+                }
+
+                // 闁哄洤鐡ㄩ弻濠囧嫉椤掆偓濠€鎾捶閻戞﹩鍋?                // 闁哄洤鐡ㄩ弻濠囧嫉椤掆偓濠€鎾捶閻戞﹩鍋?                const updatedStartTime = new Date(lpDate);
+                const resolvedRegion = inferMatchRegion({
+                    tournament: localMatch.tournament || localTournamentFilter || tournamentName,
+                    teamARegion: localMatch.teamA?.region || null,
+                    teamBRegion: localMatch.teamB?.region || null,
+                });
+                const nextVersion = localMatch.gameVersion || await resolveVersionForPayload({
+                    startTime: updatedStartTime,
+                    tournament: localMatch.tournament || localTournamentFilter || tournamentName,
+                    regionHint: resolvedRegion,
+                    teamARegion: localMatch.teamA?.region || null,
+                    teamBRegion: localMatch.teamB?.region || null,
+                });
+
+                await prisma.match.update({
+                    where: { id: localMatch.id },
+                    data: {
+                        teamAId,
+                        teamBId,
+                        winnerId: winnerId || undefined,
+                        status: 'FINISHED',
+                        startTime: updatedStartTime,
+                        gameVersion: nextVersion || null,
+                    }
+                });
+                updated++;
+                details.push(`闁跨喕濮ゅú??? ${lp.team1} vs ${lp.team2} (闁?{lp.winner}) 闁跨喓鍏歭ocalMatch.stage}`);
+                availableLocal.splice(matchIdx, 1);
+            } else {
+                // 闁哄牜鍓欏﹢鎾籍閻樻彃鐖遍柨鐔告灮閹风兘宕氬☉妯肩处闁哄倹濯界粋宀勬晸?
+                // 闁跨喓绁狿 rawMatchId 濞戞搩鍘借ぐ渚€鏁撶徊鐚糰ge 闁硅绻楅崼?
+                const stageFromLp = lp.rawMatchId
+                    .replace(/^.*?Playoffs_/, '')
+                    .replace(/_/g, ' ');
+
+                const targetTournament = localTournamentFilter || tournamentName;
+
+                const createdStartTime = new Date(lpDate);
+                const autoVersion = await resolveVersionForPayload({
+                    startTime: createdStartTime,
+                    tournament: targetTournament,
+                    regionHint: localTournamentFilter || null,
+                });
+
+                await prisma.match.create({
+                    data: {
+                        teamAId,
+                        teamBId,
+                        winnerId: winnerId || undefined,
+                        status: 'FINISHED',
+                        format: lp.gameCount <= 3 ? 'BO3' : 'BO5',
+                        tournament: targetTournament,
+                        stage: `閻庢冻绲介幃妤呮晸?${stageFromLp}`,
+                        startTime: createdStartTime,
+                        gameVersion: autoVersion || null,
+                    }
+                });
+                created++;
+                details.push(`妫ｅ啫鏅?闁哄倹婢樼紓? ${lp.team1} vs ${lp.team2} (${stageFromLp})`);
+            }
+        }
+
+        revalidatePath('/schedule');
+        revalidatePath('/admin/schedule');
+
+        return {
+            success: true,
+            updated,
+            created,
+            skipped,
+            total: lpResults.length,
+            details,
+            message: `Sync completed: updated ${updated}, created ${created}, skipped ${skipped} (already complete).`
+        };
+
+    } catch (e: any) {
+        console.error('[Playoff Sync] Error:', e);
+        return { success: false, error: e.message };
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

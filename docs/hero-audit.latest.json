@@ -1,0 +1,289 @@
+{
+  "checkedAt": "2026-03-12T09:20:10.710Z",
+  "totalGames": 1043,
+  "noAnalysisGames": 31,
+  "parseErrorGames": 0,
+  "missingHeroFields": 0,
+  "scoreggCodesRemaining": 0,
+  "unresolvedNoAnalysisGames": [
+    {
+      "gameId": "15c69b5b-9505-42a0-b432-ae63f56519c9",
+      "matchId": "2489705e-742f-41bd-8915-3ca8aeaec2f0",
+      "gameNumber": 3,
+      "teams": "KT Rolster vs DN Freecs",
+      "startTime": 1770372000000,
+      "tournament": "2026 LCK第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "6e45932a-3595-48e1-96ab-9972cbb6c3eb",
+      "matchId": "2c6e4ce9-5bb6-4944-9781-11f8b49f58cd",
+      "gameNumber": 3,
+      "teams": "Invictus Gaming vs Weibo Gaming",
+      "startTime": 1770361200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "3ab65608-1455-4f8c-a17e-d6c66acb5f0e",
+      "matchId": "eccb46c2-f57e-442d-b285-39bc14ff89f7",
+      "gameNumber": 3,
+      "teams": "Dplus KIA vs DRX",
+      "startTime": 1770451200000,
+      "tournament": "2026 LCK第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "d739fcbb-8cbd-4f84-a72f-0107c8952c05",
+      "matchId": "3dbc6b81-0918-4791-a71f-f1210409487f",
+      "gameNumber": 3,
+      "teams": "Ninjas in Pyjamas vs Team WE",
+      "startTime": 1770462000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "94906192-c954-402f-9571-4db85b210233",
+      "matchId": "6fc4b9df-8fed-4bb4-96bd-f58828ae5572",
+      "gameNumber": 4,
+      "teams": "DRX vs Nongshim RedForce",
+      "startTime": 1770537600000,
+      "tournament": "2026 LCK第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "ab4d8a98-00a1-4b92-9990-48c39dd273a2",
+      "matchId": "6fc4b9df-8fed-4bb4-96bd-f58828ae5572",
+      "gameNumber": 5,
+      "teams": "DRX vs Nongshim RedForce",
+      "startTime": 1770537600000,
+      "tournament": "2026 LCK第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "6d0f23c0-60d1-4922-83a0-1564d5b57db3",
+      "matchId": "07d2fed1-6ee1-404d-8f22-faae6e82c672",
+      "gameNumber": 5,
+      "teams": "Invictus Gaming vs Ninjas in Pyjamas",
+      "startTime": 1770627600000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "acb8b018-0ccf-48bd-b43d-1131d1ad2caf",
+      "matchId": "113ed1d2-9ee2-46ff-ba10-1ccd643bf224",
+      "gameNumber": 4,
+      "teams": "ThunderTalk Gaming vs LNG Esports",
+      "startTime": 1770703200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "3bd55b65-ba58-4427-b392-9b6035f23d44",
+      "matchId": "113ed1d2-9ee2-46ff-ba10-1ccd643bf224",
+      "gameNumber": 5,
+      "teams": "ThunderTalk Gaming vs LNG Esports",
+      "startTime": 1770703200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "8aa4f46a-05cb-49a3-a7ea-7b0b81752d8c",
+      "matchId": "b6727894-6c49-44d3-b406-f4fecc559896",
+      "gameNumber": 5,
+      "teams": "EDward Gaming vs Oh My God",
+      "startTime": 1770714000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Play-In"
+    },
+    {
+      "gameId": "8ed490ac-d13d-44da-bddd-51edbcefdb4d",
+      "matchId": "2e93b892-3d9d-438b-9c9c-e52a0d0f1f61",
+      "gameNumber": 3,
+      "teams": "JD Gaming vs Top Esports",
+      "startTime": 1770289200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "61d61964-ed83-4c05-be3a-6e3a8f917aeb",
+      "matchId": "cf9aae22-8d22-4394-8c6e-9145a6bfa663",
+      "gameNumber": 3,
+      "teams": "Ninjas in Pyjamas vs ThunderTalk Gaming",
+      "startTime": 1770282000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "02ae007f-b3af-4bc1-9c41-5e1cf7aff302",
+      "matchId": "675311f6-cec4-471d-82c5-dddeb58bbee4",
+      "gameNumber": 4,
+      "teams": "Weibo Gaming vs Invictus Gaming",
+      "startTime": 1771999200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "8d825844-233c-4f5a-a53e-cdd6c7f13391",
+      "matchId": "7a6a7b95-36b9-45bf-9bb3-dfc670d4b723",
+      "gameNumber": 4,
+      "teams": "Bilibili Gaming vs Ninjas in Pyjamas",
+      "startTime": 1772010000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "a92223ac-981c-438d-9963-125e941e2373",
+      "matchId": "ab3fef0f-2ccb-4edb-9da3-4a169b7013cd",
+      "gameNumber": 4,
+      "teams": "Weibo Gaming vs Bilibili Gaming",
+      "startTime": 1772182800000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "ccc64592-ddd2-49b6-85a2-a61d4da94a9d",
+      "matchId": "03e9471e-da0c-49b3-9968-9d2fdc8ea6e0",
+      "gameNumber": 4,
+      "teams": "BNK FEARX vs Dplus KIA",
+      "startTime": 1772265600000,
+      "tournament": "2026 LCK第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "3bcfe0f9-bdec-4268-8f06-9d388ef12a05",
+      "matchId": "544db1e0-12a1-4112-94bc-4ae3498b415b",
+      "gameNumber": 5,
+      "teams": "Invictus Gaming vs Anyone's Legend",
+      "startTime": 1772528400000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "91c21131-179e-48f5-b2a4-7b3c6a2f5cf1",
+      "matchId": "a065e5fa-abe7-4111-8816-59e136b3f6b3",
+      "gameNumber": 5,
+      "teams": "Weibo Gaming vs Anyone's Legend",
+      "startTime": 1772701200000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "dc834d02-abfa-49b5-ba1f-f8a4603eff4a",
+      "matchId": "5df1b6df-fa14-4a7d-9eae-2ef2b30f5c4f",
+      "gameNumber": 4,
+      "teams": "JD Gaming vs Weibo Gaming",
+      "startTime": 1772874000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "7c5a9970-fdc1-40fb-b2e0-729ed46f0fc5",
+      "matchId": "5df1b6df-fa14-4a7d-9eae-2ef2b30f5c4f",
+      "gameNumber": 5,
+      "teams": "JD Gaming vs Weibo Gaming",
+      "startTime": 1772874000000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "70ba8aad-9f9e-4f49-b158-83ee2af9aeb8",
+      "matchId": "33be2041-e95d-4ef3-947c-541673c7ca0c",
+      "gameNumber": 1,
+      "teams": "Bilibili Gaming vs BNK FEARX",
+      "startTime": 1773666000000,
+      "tournament": "2026 全球先锋赛",
+      "stage": "Group Stage"
+    },
+    {
+      "gameId": "745fae01-9d7d-4d66-93a2-b1a3167d5732",
+      "matchId": "33be2041-e95d-4ef3-947c-541673c7ca0c",
+      "gameNumber": 2,
+      "teams": "Bilibili Gaming vs BNK FEARX",
+      "startTime": 1773666000000,
+      "tournament": "2026 全球先锋赛",
+      "stage": "Group Stage"
+    },
+    {
+      "gameId": "76d7ae87-e6ce-4c0b-8912-93e6a0f70ef8",
+      "matchId": "33be2041-e95d-4ef3-947c-541673c7ca0c",
+      "gameNumber": 3,
+      "teams": "Bilibili Gaming vs BNK FEARX",
+      "startTime": 1773666000000,
+      "tournament": "2026 全球先锋赛",
+      "stage": "Group Stage"
+    },
+    {
+      "gameId": "8e27b944-c510-4c80-98a2-0dd8ac4c4026",
+      "matchId": "33be2041-e95d-4ef3-947c-541673c7ca0c",
+      "gameNumber": 4,
+      "teams": "Bilibili Gaming vs BNK FEARX",
+      "startTime": 1773666000000,
+      "tournament": "2026 全球先锋赛",
+      "stage": "Group Stage"
+    },
+    {
+      "gameId": "0d295c34-8e4a-4b75-ba68-ab28b244b1ae",
+      "matchId": "33be2041-e95d-4ef3-947c-541673c7ca0c",
+      "gameNumber": 5,
+      "teams": "Bilibili Gaming vs BNK FEARX",
+      "startTime": 1773666000000,
+      "tournament": "2026 全球先锋赛",
+      "stage": "Group Stage"
+    },
+    {
+      "gameId": "0f1f8c66-cef7-4aae-b6f0-301e7098eec3",
+      "matchId": "36f0e3e3-195a-420f-ac18-3a5494a2bf23",
+      "gameNumber": 3,
+      "teams": "Top Esports vs JD Gaming",
+      "startTime": 1768388400000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "ab72004e-01bf-4517-b254-8f7f08d3ff05",
+      "matchId": "0997d985-5108-471f-b33a-16a9e8ffd11a",
+      "gameNumber": 4,
+      "teams": "Anyone's Legend vs Team WE",
+      "startTime": 1771923600000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "55249f5c-4584-4616-ac87-3ce698f9653a",
+      "matchId": "0997d985-5108-471f-b33a-16a9e8ffd11a",
+      "gameNumber": 5,
+      "teams": "Anyone's Legend vs Team WE",
+      "startTime": 1771923600000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Playoffs"
+    },
+    {
+      "gameId": "87908ae1-b493-4cfc-b328-72d3821effac",
+      "matchId": "239a2381-6a30-497d-ab39-22f0c78ec518",
+      "gameNumber": 3,
+      "teams": "Invictus Gaming vs Anyone's Legend",
+      "startTime": 1768467600000,
+      "tournament": "2026 LPL第一赛段",
+      "stage": "Regular Season"
+    },
+    {
+      "gameId": "3e258b74-b239-4d92-818f-212b89b6544b",
+      "matchId": "8310e170-fc0c-47e5-b412-38608c8c0861",
+      "gameNumber": 5,
+      "teams": "Bilibili Gaming vs JD Gaming",
+      "startTime": "2026-03-08T09:59:40.688Z",
+      "tournament": "LPL 2026",
+      "stage": "第一赛段 / 淘汰赛"
+    },
+    {
+      "gameId": "9d54e879-4b4e-4e46-937d-aa9d8c30b91e",
+      "matchId": "50913b7f-d940-493b-96f7-5399f0cd07cb",
+      "gameNumber": 5,
+      "teams": "Bilibili Gaming vs JD Gaming",
+      "startTime": "2026-03-08T09:00:00.000Z",
+      "tournament": "LPL 2026",
+      "stage": "第一赛段 / 淘汰赛"
+    }
+  ]
+}

@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选手资料库 - 后台管理预览</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: rgba(15, 23, 42, 0.9);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 32px 16px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #fff;
+            padding: 0 16px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-title .bar {
+            width: 4px;
+            height: 20px;
+            background: #2563eb;
+            border-radius: 4px;
+        }
+
+        .sidebar-section {
+            font-size: 10px;
+            font-weight: 900;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 0 16px;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 2px;
+            border: 1px solid transparent;
+            position: relative;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-item.active {
+            background: rgba(37, 99, 235, 0.1);
+            border-color: rgba(37, 99, 235, 0.2);
+        }
+
+        .sidebar-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 3px;
+            height: 50%;
+            background: #3b82f6;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .sidebar-icon {
+            font-size: 18px;
+        }
+
+        .sidebar-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #94a3b8;
+        }
+
+        .sidebar-item.active .sidebar-label {
+            color: #60a5fa;
+        }
+
+        .sidebar-desc {
+            font-size: 10px;
+            color: #475569;
+        }
+
+        /* 主内容 */
+        .main {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.4);
+            padding: 32px;
+            overflow-y: auto;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .page-header p {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* 搜索栏 */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            padding: 12px 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-wrap::before {
+            content: '🔍';
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+        }
+
+        .search-box {
+            background: rgba(248, 250, 252, 0.5);
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 9px 14px 9px 40px;
+            color: #1e293b;
+            font-size: 13px;
+            font-weight: 500;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-box:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+            background: #fff;
+        }
+
+        .counter {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: #f8fafc;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid #f1f5f9;
+        }
+
+        .counter span {
+            color: #2563eb;
+            margin-left: 4px;
+        }
+
+        /* 筛选行 */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: #fff;
+            padding: 14px 16px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .filter-select {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 6px 28px 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            min-width: 100px;
+        }
+
+        .filter-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+        }
+
+        .filter-sep {
+            width: 1px;
+            height: 28px;
+            background: #f1f5f9;
+        }
+
+        /* 位置快捷筛选 */
+        .role-pills {
+            display: flex;
+            gap: 4px;
+        }
+
+        .role-pill {
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .role-pill:hover:not(.active) {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #cbd5e1;
+        }
+
+        .role-pill.active {
+            color: #fff;
+        }
+
+        .role-pill.active[data-role="ALL"] {
+            background: #334155;
+            border-color: #334155;
+        }
+
+        .role-pill.active[data-role="TOP"] {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .role-pill.active[data-role="JG"] {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .role-pill.active[data-role="MID"] {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .role-pill.active[data-role="ADC"] {
+            background: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .role-pill.active[data-role="SUP"] {
+            background: #a855f7;
+            border-color: #a855f7;
+        }
+
+        /* 表格 */
+        .table-card {
+            background: #fff;
+            border: 1px solid #f1f5f9;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: rgba(248, 250, 252, 0.5);
+        }
+
+        thead th {
+            padding: 14px 16px;
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #fafafa;
+            transition: background 0.12s;
+        }
+
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.02);
+        }
+
+        tbody td {
+            padding: 12px 16px;
+            vertical-align: middle;
+        }
+
+        /* 选手信息 */
+        .player-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .player-avatar {
+            width: 34px;
+            height: 34px;
+            background: #f1f5f9;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .player-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .player-id {
+            font-size: 9px;
+            color: #94a3b8;
+            font-family: monospace;
+            margin-top: 1px;
+        }
+
+        /* 战队 */
+        .team-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .team-logo-sm {
+            width: 22px;
+            height: 22px;
+            background: #f1f5f9;
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .team-name-sm {
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        /* 位置标签 */
+        .role-tag {
+            padding: 3px 8px;
+            border-radius: 7px;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+
+        .role-top {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .role-jg {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .role-mid {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        .role-adc {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+
+        .role-sup {
+            background: #faf5ff;
+            color: #9333ea;
+            border: 1px solid #e9d5ff;
+        }
+
+        /* 年份标签 */
+        .year-tag {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            display: inline-block;
+            margin-right: 3px;
+        }
+
+        .year-tag.active {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        .year-tag:not(.active) {
+            background: #fff;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 赛区标签 */
+        .region-tag {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            display: inline-block;
+        }
+
+        .region-tag.lpl {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .region-tag.lck {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        /* 赛段标签 */
+        .split-tags {
+            display: flex;
+            gap: 3px;
+            flex-wrap: wrap;
+        }
+
+        .split-tag {
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .split-tag.active {
+            background: #7c3aed;
+            color: #fff;
+            border-color: #7c3aed;
+        }
+
+        .split-tag:not(.active) {
+            background: #fff;
+            color: #94a3b8;
+            border-color: #e2e8f0;
+        }
+
+        .split-tag:hover:not(.active) {
+            border-color: #a78bfa;
+            color: #7c3aed;
+        }
+
+        /* 操作列 */
+        .action-btns {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-delete {
+            font-size: 10px;
+            font-weight: 900;
+            background: #fff;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-delete:hover {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444;
+        }
+
+        /* 添加选手按钮 */
+        .btn-add {
+            padding: 8px 18px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-add:hover {
+            background: #1d4ed8;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* 弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 32px;
+            width: 460px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: #1e293b;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-row {
+            margin-bottom: 14px;
+        }
+
+        .modal-label {
+            font-size: 10px;
+            font-weight: 900;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            outline: none;
+            background: #f8fafc;
+        }
+
+        .modal-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+            background: #fff;
+        }
+
+        .modal-select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            outline: none;
+            background: #f8fafc;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-btn-cancel {
+            padding: 8px 18px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #f1f5f9;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .modal-btn-cancel:hover {
+            background: #e2e8f0;
+        }
+
+        .modal-btn-confirm {
+            padding: 8px 22px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 800;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+        }
+
+        .modal-btn-confirm:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-title"><span class="bar"></span> 超级控制台</div>
+            <div class="sidebar-section">系统与配置</div>
+            <div class="sidebar-item"><span class="sidebar-icon">👁️</span>
+                <div>
+                    <div class="sidebar-label">配置预览</div>
+                    <div class="sidebar-desc">系统全域配置</div>
+                </div>
+            </div>
+            <div class="sidebar-item"><span class="sidebar-icon">⚡</span>
+                <div>
+                    <div class="sidebar-label">数据同步</div>
+                    <div class="sidebar-desc">云端同步链路</div>
+                </div>
+            </div>
+            <div class="sidebar-item"><span class="sidebar-icon">📊</span>
+                <div>
+                    <div class="sidebar-label">赛制体系</div>
+                    <div class="sidebar-desc">杯赛与分组映射</div>
+                </div>
+            </div>
+            <div class="sidebar-item"><span class="sidebar-icon">🛡️</span>
+                <div>
+                    <div class="sidebar-label">战队资料库</div>
+                    <div class="sidebar-desc">全联盟战队维护</div>
+                </div>
+            </div>
+            <div class="sidebar-item active"><span class="sidebar-icon">⚔️</span>
+                <div>
+                    <div class="sidebar-label">选手资料库</div>
+                    <div class="sidebar-desc">全联盟选手维护</div>
+                </div>
+            </div>
+            <div class="sidebar-item"><span class="sidebar-icon">🩺</span>
+                <div>
+                    <div class="sidebar-label">数据诊断</div>
+                    <div class="sidebar-desc">一致性监控面板</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容 -->
+        <div class="main">
+            <div class="page-header">
+                <h1>选手资料库</h1>
+                <p>全联盟选手维护</p>
+            </div>
+
+            <!-- 搜索栏 -->
+            <div class="toolbar">
+                <div class="search-wrap">
+                    <input type="text" class="search-box" placeholder="搜索选手名或战队名..." id="searchInput">
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="counter">INDEXED: <span id="playerCount">0</span> PLAYERS</div>
+                    <button class="btn-add" onclick="openAddModal()">＋ 添加选手</button>
+                </div>
+            </div>
+
+            <!-- 筛选行：年份 / 赛区 / 所属队伍 / 位置 -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <span class="filter-label">年份</span>
+                    <select class="filter-select" id="filterYear">
+                        <option value="ALL">全部年份</option>
+                        <option value="2027">2027</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="filter-sep"></div>
+                <div class="filter-group">
+                    <span class="filter-label">赛区</span>
+                    <select class="filter-select" id="filterRegion">
+                        <option value="ALL">全部赛区</option>
+                        <option value="LPL">LPL</option>
+                        <option value="LCK">LCK</option>
+                    </select>
+                </div>
+                <div class="filter-sep"></div>
+                <div class="filter-group">
+                    <span class="filter-label">战队</span>
+                    <select class="filter-select" id="filterTeam" style="min-width: 140px;">
+                        <option value="ALL">全部战队</option>
+                    </select>
+                </div>
+                <div class="filter-sep"></div>
+                <div class="filter-group">
+                    <span class="filter-label">位置</span>
+                    <div class="role-pills">
+                        <button class="role-pill active" data-role="ALL">ALL</button>
+                        <button class="role-pill" data-role="TOP">TOP</button>
+                        <button class="role-pill" data-role="JG">JG</button>
+                        <button class="role-pill" data-role="MID">MID</button>
+                        <button class="role-pill" data-role="ADC">ADC</button>
+                        <button class="role-pill" data-role="SUP">SUP</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表格 -->
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>选手 (PLAYER)</th>
+                            <th>所属战队 (TEAM)</th>
+                            <th>位置 (ROLE)</th>
+                            <th>年份 (YEARS)</th>
+                            <th>赛区 (REGION)</th>
+                            <th>赛段 (SPLITS)</th>
+                            <th style="text-align:center;width:70px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playerBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加选手弹窗 -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-title">＋ 添加选手</div>
+            <div class="modal-row">
+                <div class="modal-label">选手名 (PLAYER NAME)</div>
+                <input class="modal-input" id="addName" placeholder="例: Faker">
+            </div>
+            <div class="modal-row">
+                <div class="modal-label">所属战队 (TEAM)</div>
+                <select class="modal-select" id="addTeam"></select>
+            </div>
+            <div class="modal-row" style="display:flex;gap:10px;">
+                <div style="flex:1">
+                    <div class="modal-label">位置 (ROLE)</div>
+                    <select class="modal-select" id="addRole">
+                        <option value="TOP">TOP</option>
+                        <option value="JUNGLE">JUNGLE</option>
+                        <option value="MID">MID</option>
+                        <option value="ADC">ADC</option>
+                        <option value="SUPPORT">SUPPORT</option>
+                    </select>
+                </div>
+                <div style="flex:1">
+                    <div class="modal-label">赛段 (SPLIT)</div>
+                    <select class="modal-select" id="addSplit">
+                        <option value="S1">第一赛段</option>
+                        <option value="S2">第二赛段</option>
+                        <option value="S3">第三赛段</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-btn-cancel" onclick="closeAddModal()">取消</button>
+                <button class="modal-btn-confirm" onclick="confirmAdd()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const roleMap = { TOP: 'top', JUNGLE: 'jg', MID: 'mid', ADC: 'adc', SUPPORT: 'sup' };
+        const roleShort = { TOP: 'TOP', JUNGLE: 'JG', MID: 'MID', ADC: 'ADC', SUPPORT: 'SUP' };
+        const allSplits = [
+            { id: 'S1', full: '第一赛段' },
+            { id: 'S2', full: '第二赛段' },
+            { id: 'S3', full: '第三赛段' }
+        ];
+
+        const players = [
+            { name: 'Bin', role: 'TOP', team: 'BLG', teamFull: 'Bilibili Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Xun', role: 'JUNGLE', team: 'BLG', teamFull: 'Bilibili Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Knight', role: 'MID', team: 'BLG', teamFull: 'Bilibili Gaming', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Elk', role: 'ADC', team: 'BLG', teamFull: 'Bilibili Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'ON', role: 'SUPPORT', team: 'BLG', teamFull: 'Bilibili Gaming', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Zeus', role: 'TOP', team: 'T1', teamFull: 'T1', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Oner', role: 'JUNGLE', team: 'T1', teamFull: 'T1', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Faker', role: 'MID', team: 'T1', teamFull: 'T1', region: 'LCK', years: ['2025', '2026', '2027'], splits: ['S1', 'S2', 'S3'] },
+            { name: 'Gumayusi', role: 'ADC', team: 'T1', teamFull: 'T1', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Keria', role: 'SUPPORT', team: 'T1', teamFull: 'T1', region: 'LCK', years: ['2025', '2026'], splits: ['S1'] },
+            { name: 'Tian', role: 'JUNGLE', team: 'TES', teamFull: 'Top Esports', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Creme', role: 'MID', team: 'TES', teamFull: 'Top Esports', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'JackeyLove', role: 'ADC', team: 'TES', teamFull: 'Top Esports', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Meiko', role: 'SUPPORT', team: 'TES', teamFull: 'Top Esports', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Chovy', role: 'MID', team: 'GEN', teamFull: 'Gen.G', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2', 'S3'] },
+            { name: 'Peyz', role: 'ADC', team: 'GEN', teamFull: 'Gen.G', region: 'LCK', years: ['2026'], splits: ['S1'] },
+            { name: 'Doran', role: 'TOP', team: 'GEN', teamFull: 'Gen.G', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Canyon', role: 'JUNGLE', team: 'GEN', teamFull: 'Gen.G', region: 'LCK', years: ['2025', '2026'], splits: ['S1'] },
+            { name: '369', role: 'TOP', team: 'JDG', teamFull: 'JD Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1'] },
+            { name: 'Kanavi', role: 'JUNGLE', team: 'JDG', teamFull: 'JD Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Yagao', role: 'MID', team: 'JDG', teamFull: 'JD Gaming', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Ruler', role: 'ADC', team: 'JDG', teamFull: 'JD Gaming', region: 'LPL', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Missing', role: 'SUPPORT', team: 'JDG', teamFull: 'JD Gaming', region: 'LPL', years: ['2026'], splits: ['S1'] },
+            { name: 'Zeka', role: 'MID', team: 'HLE', teamFull: 'Hanwha Life Esports', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+            { name: 'Viper', role: 'ADC', team: 'HLE', teamFull: 'Hanwha Life Esports', region: 'LCK', years: ['2025', '2026'], splits: ['S1', 'S2'] },
+        ];
+
+        let activeRole = 'ALL';
+
+        // 根据年份+赛区联动更新战队下拉
+        function updateTeamFilter() {
+            const fYear = document.getElementById('filterYear').value;
+            const fRegion = document.getElementById('filterRegion').value;
+            const sel = document.getElementById('filterTeam');
+            const prevVal = sel.value;
+
+            // 按当前年份+赛区过滤出可选战队
+            const eligible = players.filter(p => {
+                if (fYear !== 'ALL' && !p.years.includes(fYear)) return false;
+                if (fRegion !== 'ALL' && p.region !== fRegion) return false;
+                return true;
+            });
+            const teams = [...new Set(eligible.map(p => p.team))].sort();
+
+            sel.innerHTML = '<option value="ALL">全部战队</option>';
+            teams.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                sel.appendChild(opt);
+            });
+
+            // 尝试恢复之前选中的战队，如果不在列表中则回到全部
+            if (teams.includes(prevVal)) {
+                sel.value = prevVal;
+            } else {
+                sel.value = 'ALL';
+            }
+        }
+
+        function render() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const fYear = document.getElementById('filterYear').value;
+            const fRegion = document.getElementById('filterRegion').value;
+            const fTeam = document.getElementById('filterTeam').value;
+
+            const filtered = players.filter(p => {
+                if (fYear !== 'ALL' && !p.years.includes(fYear)) return false;
+                if (fRegion !== 'ALL' && p.region !== fRegion) return false;
+                if (fTeam !== 'ALL' && p.team !== fTeam) return false;
+                if (activeRole !== 'ALL' && roleShort[p.role] !== activeRole) return false;
+                if (search && !p.name.toLowerCase().includes(search) && !p.team.toLowerCase().includes(search) && !p.teamFull.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            document.getElementById('playerCount').textContent = filtered.length;
+
+            document.getElementById('playerBody').innerHTML = filtered.map(p => {
+                const rc = roleMap[p.role] || 'mid';
+
+                const yearHtml = ['2025', '2026', '2027'].map(y => {
+                    const isActive = p.years.includes(y);
+                    return '<span class="year-tag' + (isActive ? ' active' : '') + '">' + y + '</span>';
+                }).join('');
+
+                const regionClass = p.region.toLowerCase();
+                const regionHtml = '<span class="region-tag ' + regionClass + '">' + p.region + '</span>';
+
+                const splitHtml = allSplits.map(s => {
+                    const isActive = p.splits.includes(s.id);
+                    return '<span class="split-tag ' + (isActive ? 'active' : '') + '" title="' + s.full + '" onclick="this.classList.toggle(\'active\')">' + s.id + '</span>';
+                }).join('');
+
+                return '<tr>' +
+                    '<td><div class="player-cell"><div class="player-avatar">👤</div><div><div class="player-name">' + p.name + '</div><div class="player-id">' + p.name.toLowerCase() + '</div></div></div></td>' +
+                    '<td><div class="team-cell"><div class="team-logo-sm">🛡️</div><div class="team-name-sm">' + p.team + '</div></div></td>' +
+                    '<td><span class="role-tag role-' + rc + '">' + p.role + '</span></td>' +
+                    '<td>' + yearHtml + '</td>' +
+                    '<td>' + regionHtml + '</td>' +
+                    '<td><div class="split-tags">' + splitHtml + '</div></td>' +
+                    '<td><div class="action-btns"><button class="btn-delete" title="删除选手">✕</button></div></td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        // 位置筛选
+        document.querySelectorAll('.role-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.role-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                activeRole = btn.dataset.role;
+                render();
+            });
+        });
+
+        // 年份/赛区变更时联动更新战队下拉
+        ['filterYear', 'filterRegion'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                updateTeamFilter();
+                render();
+            });
+        });
+        // 战队下拉直接触发渲染
+        document.getElementById('filterTeam').addEventListener('change', render);
+
+        // 搜索
+        document.getElementById('searchInput').addEventListener('input', render);
+
+        updateTeamFilter();
+        render();
+
+        // 弹窗交互
+        function openAddModal() {
+            const sel = document.getElementById('addTeam');
+            const teams = [...new Set(players.map(p => p.team))].sort();
+            sel.innerHTML = teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+            document.getElementById('addName').value = '';
+            document.getElementById('addModal').classList.add('active');
+        }
+        function closeAddModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+        function confirmAdd() {
+            const name = document.getElementById('addName').value.trim();
+            const team = document.getElementById('addTeam').value;
+            const role = document.getElementById('addRole').value;
+            const split = document.getElementById('addSplit').value;
+            if (!name) { alert('请输入选手名'); return; }
+
+            const teamObj = players.find(p => p.team === team);
+            players.push({
+                name, role, team,
+                teamFull: teamObj ? teamObj.teamFull : team,
+                region: teamObj ? teamObj.region : 'LPL',
+                years: ['2026'],
+                splits: [split]
+            });
+            closeAddModal();
+            updateTeamFilter();
+            render();
+        }
+        // 点击蒙层关闭
+        document.getElementById('addModal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeAddModal();
+        });
+    </script>
+</body>
+
+</html>

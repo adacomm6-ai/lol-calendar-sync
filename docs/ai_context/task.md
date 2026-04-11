@@ -1,0 +1,99 @@
+# Task List
+
+- [x] Debug game data entry (Game 3 issue)
+- [x] Fix game numbering in database
+- [x] Verify fix for game data entry
+- [x] Analyze `OddsManager.tsx` for manual editing
+- [x] Create `updateGameManualData` server action
+- [x] Modify `OddsManager.tsx` to add edit UI
+- [x] Verify manual match result editing
+- [x] Verify 2026 Demacia Cup data
+    - [x] Create audit script `verify_demacia_data.js`
+    - [x] Run audit script and analyze results
+    - [x] Report discrepancies or confirm data integrity
+- [x] Debug Missing Hero Icons
+    - [x] Investigate `AnalysisCharts.tsx`
+    - [x] Fix image rendering logic
+    - [x] Verify fix
+- [x] Add Tournament Filtering to Team Page
+    - [x] Modify `src/app/teams/[id]/page.tsx` to fetch all matches
+    - [x] Implement unique tournament extraction logic
+    - [x] Implement filtering based on `searchParams`
+    - [x] Add Tournament Filter UI (Tabs/Dropdown)
+- [x] Add LCK Teams & Rosters (Split 1)
+    - [x] Check existing teams
+    - [x] Create seed script `seed_lck_2026.js` with 10 teams and players
+    - [x] Execute seed script
+    - [x] Verify data entry (Gen.G and DNS verified)
+- [x] Refactor Analysis Page to Player Data
+    - [x] Update Navbar: "分析" -> "选手数据"
+    - [x] Modify `src/app/analysis/page.tsx`
+        - [x] Fetch Players & Games
+        - [x] Implement Hero Stats Calculation
+        - [x] Create UI: Filters & Player List
+    - [x] Add Player Search
+        - [x] Create local `useDebounce` hook
+        - [x] Create `PlayerSearch` component
+        - [x] Integrate search into `PlayerDataPage`
+    - [x] Feature: Add Demacia Cup Filter to Player Data Page
+    - [x] Data: Import Players from Demacia Cup Match Analysis
+- [x] **Refactor Match Detail Layout**
+    - [x] Plan changes (3-column layout)
+    - [x] Modify `src/components/MatchDetailClient.tsx`
+        - [x] Widen container
+        - [x] Rename Analyst Comments (Pre->Commentator A, Post->Commentator B) <!-- id: 12 -->
+- [x] Verify New Layout Responsiveness <!-- id: 13 -->
+    - [x] Split Scoreboard and Charts
+        - [x] Update `AnalysisCharts` with `viewMode`
+        - [x] Update `MatchDetailClient` to remove Chart from top and add to bottom
+- [x] Redesign Match Detail Page <!-- id: 50 -->
+    - [x] Reorder columns in `MatchDetailClient.tsx` <!-- id: 51 -->
+    - [x] Move Match Header above Odds (Left Column) <!-- id: 54 -->
+    - [x] Center Odds Title in `OddsManager` <!-- id: 55 -->
+    - [x] Refactor `OddsManager` Result UI <!-- id: 52 -->
+    - [x] Implement inline result editing <!-- id: 53 -->
+    - [x] Highlight Winning Odds based on Game Result <!-- id: 56 -->
+    - [x] Update UI to display 3-level hierarchy <!-- id: 18 -->
+    - [x] Replace Damage Chart with Game Summary Panel (Winner, Duration, Kills, Lineups) <!-- id: 57 -->
+    - [x] Replace Damage Chart with Game Summary Panel (Winner, Duration, Kills, Lineups) <!-- id: 57 -->
+    - [x] Vertical Lineup Layout + Edit Functionality <!-- id: 58 -->
+    - [x] Remove Bottom Duplicate / Move Lineups to Bottom <!-- id: 59 -->
+    - [x] UI Polish: Fix Team Name Overflow, Improve Spacing/Typography <!-- id: 60 -->
+    - [x] Feature: Add 10m Kills Editing (Schema & UI) <!-- id: 61 -->
+    - [x] Data: Update Key Team Short Names (IG/LNG etc.) <!-- id: 62 -->
+    - [x] UI: Resize Left Column (Header 30% / Odds 70%) <!-- id: 63 -->
+    - [x] UI: Resize Left Column (Header 30% / Odds 70%) <!-- id: 63 -->
+    - [x] Feature: Dual Scoreboard Image Upload (Left/Right) <!-- id: 64 -->
+- [x] UI: Add Date Display to Schedule Page Match List <!-- id: 65 -->
+- [x] Fix: Extra Text on Game Tabs <!-- id: 91 -->
+- [x] Feature: Highlight Text in Comments (Red/Blue/Green/Bold) <!-- id: 92 -->
+    - [x] Optimization: Click-to-Edit Mode (Hide tags by default)
+- [x] Feature: Player Profile Page <!-- id: 70 -->
+    - [x] Create route `src/app/players/[id]/page.tsx` <!-- id: 71 -->
+    - [x] link player cards in `src/app/analysis/page.tsx` to profile <!-- id: 72 -->
+    - [x] Implement Player Header (Avatar, Team, Role) <!-- id: 73 -->
+    - [x] Implement Player Stats (KDA, Dmg, Gold, etc.) <!-- id: 74 -->
+    - [x] Implement Recent Matches List <!-- id: 75 -->
+    - [x] UI: Link Player Names in Team/Match Pages to Profile
+    - [x] UI: Populate Player Profile with Demacia Cup data
+        - [x] Handle missing KDA data (Demacia Cup Damage Chart limitations)
+    - [x] Implement Hero Pool (Most played champs) <!-- id: 76 -->
+- [x] Redesign Team Data Navigation <!-- id: 19 -->
+    - [x] Implement Region Filter (LPL/LCK) as Level 1 <!-- id: 20 -->
+    - [x] Implement Year Filter (2026) as Level 2 <!-- id: 21 -->
+    - [x] Update Team Data UI <!-- id: 22 -->
+- [x] Redesign Schedule Page Navigation <!-- id: 23 -->
+    - [x] Implement 3-Level Nav (Region > Year > Stage) <!-- id: 24 -->
+    - [x] Add "A, M, S" International Stages <!-- id: 25 -->
+    - [x] Update Filter Logic <!-- id: 26 -->
+- [x] Offline Optimization <!-- id: 30 -->
+    - [x] Create download script <!-- id: 31 -->
+    - [x] Run download script <!-- id: 32 -->
+    - [x] Update TeamLogo component <!-- id: 33 -->
+    - [x] Update AnalysisCharts component <!-- id: 34 -->
+- [x] Backend Migration <!-- id: 40 -->
+    - [x] Install dependencies (google-generativeai, sharp) <!-- id: 41 -->
+    - [x] Create `src/lib/gemini.ts` service <!-- id: 42 -->
+    - [x] Monitor/Verify Gold Curve cropping <!-- id: 43 -->
+    - [x] Update `upload/actions.ts` <!-- id: 44 -->
+    - [x] Update `odds/actions.ts` <!-- id: 45 -->

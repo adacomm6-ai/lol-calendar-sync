@@ -1,0 +1,444 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id           String               @id @default(uuid())
+  name         String               @unique
+  shortName    String?
+  region       String
+  logo         String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  matchesAsB   Match[]              @relation("TeamB")
+  matchesAsA   Match[]              @relation("TeamA")
+  players      Player[]
+  teamComments TeamComment[]
+  statSnapshots PlayerStatSnapshot[]
+  rankAccounts PlayerRankAccount[]
+  rankRecentSummaries PlayerRankRecentSummary[]
+  rankProfileCaches PlayerRankProfileCache[]
+}
+
+model Player {
+  id            String               @id @default(uuid())
+  name          String
+  role          String
+  split         String               @default("Split 1")
+  teamId        String
+  photo         String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  team          Team                 @relation(fields: [teamId], references: [id])
+  statSnapshots PlayerStatSnapshot[]
+  rankAccounts  PlayerRankAccount[]
+  rankSnapshots PlayerRankSnapshot[]
+  rankRecentSummaries PlayerRankRecentSummary[]
+  rankProfileCache PlayerRankProfileCache?
+
+  @@unique([name, teamId])
+}
+
+model Match {
+  id               String    @id @default(uuid())
+  startTime        DateTime?
+  teamAId          String?
+  teamBId          String?
+  winnerId         String?
+  status           String    @default("SCHEDULED")
+  format           String    @default("BO3")
+  tournament       String    @default("LPL")
+  stage            String    @default("Regular Season")
+  gameVersion      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  externalSource   String?
+  externalMatchId  String?   @unique
+  bpSourceMatchId  String?   @unique
+  comments         Comment[]
+  games            Game[]
+  teamB            Team?     @relation("TeamB", fields: [teamBId], references: [id])
+  teamA            Team?     @relation("TeamA", fields: [teamAId], references: [id])
+  odds             Odds[]
+  manualOddsRecords ManualOddsRecord[]
+}
+
+model Game {
+  id                     String   @id @default(uuid())
+  matchId                String
+  gameNumber             Int
+  winnerId               String?
+  duration               Int?
+  teamAStats             String?
+  teamBStats             String?
+  blueSideTeamId         String?
+  redSideTeamId          String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  analysisData           String?
+  totalKills             Int?
+  blueKills              Int?
+  redKills               Int?
+  screenshot             String?
+  blueTenMinKills        Int?
+  redTenMinKills         Int?
+  screenshot2            String?
+  externalSource         String?
+  externalSourceResultId String?  @unique
+  externalSourceGameId   String?
+  match                  Match    @relation(fields: [matchId], references: [id])
+
+  @@unique([matchId, gameNumber])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  matchId    String
+  gameNumber Int      @default(1)
+  content    String
+  author     String   @default("User")
+  type       String   @default("POST_MATCH")
+  createdAt  DateTime @default(now())
+  userId     String?
+  match      Match    @relation(fields: [matchId], references: [id])
+}
+
+model TeamComment {
+  id        String   @id @default(uuid())
+  teamId    String
+  content   String
+  author    String   @default("User")
+  createdAt DateTime @default(now())
+  userId    String?
+  team      Team     @relation(fields: [teamId], references: [id])
+}
+
+model Odds {
+  id         String   @id @default(uuid())
+  matchId    String
+  gameNumber Int      @default(1)
+  provider   String
+  type       String   @default("WINNER")
+  threshold  Float?
+  teamAOdds  Float
+  teamBOdds  Float
+  timestamp  DateTime @default(now())
+  match      Match    @relation(fields: [matchId], references: [id])
+}
+
+model ManualOddsRecord {
+  id                   String   @id
+  matchId              String
+  gameNumber           Int      @default(1)
+  type                 String
+  side                 String
+  threshold            Float?
+  selectionLabel       String
+  detail               String   @default("")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  resultValue          Float?
+  settledStatus        String?
+  oddsValue            Float?
+  oppositeOddsValue    Float?
+  provider             String?
+  actualThreshold      Float?
+  actualSelectionLabel String?
+  actualOddsRaw        Float?
+  actualOddsNormalized Float?
+  actualOddsFormat     String?
+  actualProvider       String?
+  actualStakeAmount    Float?
+  teamAId              String?
+  teamBId              String?
+  teamAName            String?
+  teamBName            String?
+  teamARegion          String?
+  teamBRegion          String?
+  matchStartTime       DateTime?
+  tournament           String?
+  stage                String?
+  match                Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([matchId, gameNumber])
+  @@index([type, side])
+}
+
+model GameVersionRule {
+  id            String   @id @default(uuid())
+  region        String
+  version       String
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Hero {
+  id        String   @id
+  name      String   @unique
+  alias     String?
+  title     String?
+  avatarUrl String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model UserProfile {
+  id        String   @id
+  name      String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PlayerStatSnapshot {
+  id                       String    @id @default(uuid())
+  sourceKey                String    @unique
+  playerId                 String?
+  teamId                   String?
+  league                   String
+  seasonYear               String
+  splitName                String?
+  tournamentName           String
+  role                     String
+  playerName               String
+  normalizedPlayerName     String
+  teamName                 String
+  teamShortName            String?
+  source                   String
+  sourceUrl                String?
+  dateFrom                 DateTime?
+  dateTo                   DateTime?
+  games                    Int       @default(0)
+  wins                     Int       @default(0)
+  losses                   Int       @default(0)
+  winRatePct               Float?
+  kda                      Float?
+  avgKills                 Float?
+  avgDeaths                Float?
+  avgAssists               Float?
+  csPerMin                 Float?
+  goldPerMin               Float?
+  killParticipationPct     Float?
+  damageSharePct           Float?
+  goldSharePct             Float?
+  visionSharePct           Float?
+  damagePerMin             Float?
+  visionScorePerMin        Float?
+  wardsPerMin              Float?
+  wardsClearedPerMin       Float?
+  visionWardsPerMin        Float?
+  goldDiffAt15             Float?
+  csDiffAt15               Float?
+  xpDiffAt15               Float?
+  firstBloodParticipationPct Float?
+  firstBloodVictimPct      Float?
+  currentRecentGames       Int       @default(0)
+  currentTotalGames        Int       @default(0)
+  confidence               Float?
+  stateScore               Float?
+  masteryScore             Float?
+  laneScore                Float?
+  overallScore             Float?
+  relativeScore            Float?
+  relativeZScore           Float?
+  evaluationLabel          String?
+  trendScore               Float?
+  labelsJson               String?
+  insightsJson             String?
+  recentWinRatePct         Float?
+  careerWinRatePct         Float?
+  recentKda                Float?
+  careerKda                Float?
+  localGoldPerMin          Float?
+  localCsPerMin            Float?
+  localDamagePerMin        Float?
+  localDamageTakenPerMin   Float?
+  localKillParticipationPct Float?
+  localVisionPerMin        Float?
+  localScore               Float?
+  localExternalWinRatePct  Float?
+  mappedTeamName           String?
+  mappedRole               String?
+  sampleGames              Int?
+  mappingConfidence        Float?
+  extraJson                String?
+  syncedAt                 DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  player                   Player?   @relation(fields: [playerId], references: [id], onDelete: SetNull)
+  team                     Team?     @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@index([league, seasonYear, tournamentName])
+  @@index([playerId])
+  @@index([teamId])
+  @@index([playerName, teamName])
+}
+
+model PlayerRankAccount {
+  id                String                   @id @default(uuid())
+  playerId          String
+  teamId            String?
+  platform          String
+  regionGroup       String?
+  gameName          String
+  tagLine           String?
+  summonerId        String?
+  summonerLevel     Int?
+  puuid             String                   @unique
+  isPrimary         Boolean                  @default(false)
+  isActiveCandidate Boolean                  @default(false)
+  status            String                   @default("ACTIVE")
+  source            String                   @default("MANUAL")
+  confidence        Float?
+  notes             String?
+  firstSeenAt       DateTime                 @default(now())
+  lastSeenAt        DateTime?
+  lastVerifiedAt    DateTime?
+  lastMatchAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  player            Player                   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team              Team?                    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  aliases           PlayerRankAccountAlias[]
+  snapshots         PlayerRankSnapshot[]
+  recentSummaries   PlayerRankRecentSummary[]
+  primaryForCaches  PlayerRankProfileCache[] @relation("RankProfilePrimaryAccount")
+  activeForCaches   PlayerRankProfileCache[] @relation("RankProfileActiveAccount")
+  displayForCaches  PlayerRankProfileCache[] @relation("RankProfileDisplayAccount")
+
+  @@index([playerId])
+  @@index([teamId])
+  @@index([platform, gameName, tagLine])
+  @@index([status, isPrimary, isActiveCandidate])
+}
+
+model PlayerRankAccountAlias {
+  id         String            @id @default(uuid())
+  accountId  String
+  aliasType  String
+  aliasValue String
+  source     String?
+  confidence Float?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  account    PlayerRankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([aliasType, aliasValue])
+}
+
+model PlayerRankSnapshot {
+  id           String            @id @default(uuid())
+  playerId     String
+  accountId    String
+  queueType    String            @default("RANKED_SOLO_5x5")
+  tier         String?
+  rank         String?
+  leaguePoints Int?
+  wins         Int               @default(0)
+  losses       Int               @default(0)
+  winRate      Float?
+  snapshotAt   DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  player       Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  account      PlayerRankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, snapshotAt])
+  @@index([accountId, snapshotAt])
+  @@index([queueType, snapshotAt])
+}
+
+model PlayerRankRecentSummary {
+  id               String            @id @default(uuid())
+  playerId         String
+  teamId           String?
+  accountId        String
+  games3d          Int               @default(0)
+  games7d          Int               @default(0)
+  games14d         Int               @default(0)
+  wins7d           Int               @default(0)
+  losses7d         Int               @default(0)
+  winRate7d        Float?
+  wins14d          Int               @default(0)
+  losses14d        Int               @default(0)
+  winRate14d       Float?
+  lastGameAt       DateTime?
+  topChampionsJson String?
+  topPositionsJson String?
+  activityScore    Float?
+  activityLabel    String?
+  formScore        Float?
+  trendScore       Float?
+  sourceUpdatedAt  DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  player           Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team             Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  account          PlayerRankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, updatedAt])
+  @@index([teamId, updatedAt])
+  @@index([accountId, updatedAt])
+}
+
+model PlayerRankProfileCache {
+  id                   String             @id @default(uuid())
+  playerId             String             @unique
+  teamId               String?
+  primaryAccountId     String?
+  activeAccountId      String?
+  displayAccountId     String?
+  displayPlatform      String?
+  displayGameName      String?
+  displayTagLine       String?
+  displayTier          String?
+  displayRank          String?
+  displayLeaguePoints  Int?
+  displayWins          Int               @default(0)
+  displayLosses        Int               @default(0)
+  displayWinRate       Float?
+  accountCount         Int               @default(0)
+  verifiedAccountCount Int               @default(0)
+  suspectAccountCount  Int               @default(0)
+  games7d              Int               @default(0)
+  games14d             Int               @default(0)
+  winRate14d           Float?
+  activityScore        Float?
+  activityLabel        String?
+  formScore            Float?
+  trendScore           Float?
+  topChampionsJson     String?
+  lastGameAt           DateTime?
+  lastSyncedAt         DateTime?
+  confidenceScore      Float?
+  confidenceLabel      String?
+  notes                String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  player               Player            @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team                 Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  primaryAccount       PlayerRankAccount? @relation("RankProfilePrimaryAccount", fields: [primaryAccountId], references: [id], onDelete: SetNull)
+  activeAccount        PlayerRankAccount? @relation("RankProfileActiveAccount", fields: [activeAccountId], references: [id], onDelete: SetNull)
+  displayAccount       PlayerRankAccount? @relation("RankProfileDisplayAccount", fields: [displayAccountId], references: [id], onDelete: SetNull)
+
+  @@index([teamId])
+  @@index([activityScore])
+  @@index([displayLeaguePoints])
+  @@index([games7d])
+  @@index([confidenceScore])
+}
+
+model SystemSettings {
+  id        String   @id @default("global")
+  data      String
+  updatedAt DateTime @updatedAt
+}
+
