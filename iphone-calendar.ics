@@ -1,0 +1,1554 @@
+﻿BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Codex//LOL Schedule Calendar//CN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:LOL赛程
+X-WR-TIMEZONE:Asia/Shanghai
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
+BEGIN:VEVENT
+UID:lol-match-9ea368af-acd1-4457-b7de-3406de318e1a@lol-data-calendar
+DTSTAMP:20260323T113801Z
+LAST-MODIFIED:20260323T113801Z
+DTSTART:20260411T120000Z
+DTEND:20260411T153000Z
+SUMMARY:2026 lec春季赛 | TH vs NAVI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/9ea368af-acd1-4457-b7de-3406de3
+ 18e1a
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/9ea368af-acd1-4457-b7de-34
+ 06de318e1a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-1915dac4-78e4-4bf1-9df6-1d0f2e3ded0d@lol-data-calendar
+DTSTAMP:20260323T113801Z
+LAST-MODIFIED:20260323T113801Z
+DTSTART:20260411T141500Z
+DTEND:20260411T174500Z
+SUMMARY:2026 lec春季赛 | G2 vs VIT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/1915dac4-78e4-4bf1-9df6-1d0f2e3
+ ded0d
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/1915dac4-78e4-4bf1-9df6-1d
+ 0f2e3ded0d
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d57b6529-ce8f-4174-a6e9-e60da5222d2a@lol-data-calendar
+DTSTAMP:20260323T113801Z
+LAST-MODIFIED:20260323T113801Z
+DTSTART:20260411T163000Z
+DTEND:20260411T200000Z
+SUMMARY:2026 lec春季赛 | MKOI vs SK
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d57b6529-ce8f-4174-a6e9-e60da52
+ 22d2a
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/d57b6529-ce8f-4174-a6e9-e6
+ 0da5222d2a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-ec3003b9-ae35-4c9f-a6d5-79bb87069a89@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260412T080000Z
+DTEND:20260412T113000Z
+SUMMARY:2026 LCK常规赛 | BFX vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/ec3003b9-ae35-4c9f-a6d5-79bb870
+ 69a89
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/ec3003b9-ae35-4c9f-a6d5-79
+ bb87069a89
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-c0626d00-2d16-4e70-a05a-0b99e351ffa5@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260412T100000Z
+DTEND:20260412T133000Z
+SUMMARY:2026 LCK常规赛 | BRO vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/c0626d00-2d16-4e70-a05a-0b99e35
+ 1ffa5
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/c0626d00-2d16-4e70-a05a-0b
+ 99e351ffa5
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-60c0158e-a11d-46ec-adc2-5b814058e133@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260412T150000Z
+DTEND:20260412T183000Z
+SUMMARY:2026 lec春季赛 | VIT vs SHFT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/60c0158e-a11d-46ec-adc2-5b81405
+ 8e133
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/60c0158e-a11d-46ec-adc2-5b
+ 814058e133
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-7880c4fe-d03a-415d-b2c6-ff9ca8eccf39@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260412T171500Z
+DTEND:20260412T204500Z
+SUMMARY:2026 lec春季赛 | TH vs KC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/7880c4fe-d03a-415d-b2c6-ff9ca8e
+ ccf39
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/7880c4fe-d03a-415d-b2c6-ff
+ 9ca8eccf39
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-01901947-00b4-4887-bec9-4693c3add038@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260413T150000Z
+DTEND:20260413T183000Z
+SUMMARY:2026 lec春季赛 | FNC vs SK
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/01901947-00b4-4887-bec9-4693c3a
+ dd038
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/01901947-00b4-4887-bec9-46
+ 93c3add038
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-0d18638e-02b0-4a83-b7a2-2200bda8e1b8@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260413T171500Z
+DTEND:20260413T204500Z
+SUMMARY:2026 lec春季赛 | GX vs SHFT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/0d18638e-02b0-4a83-b7a2-2200bda
+ 8e1b8
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/0d18638e-02b0-4a83-b7a2-22
+ 00bda8e1b8
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-cea428de-ce6d-4e87-9e15-c1b9475cddf9@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260415T080000Z
+DTEND:20260415T113000Z
+SUMMARY:2026 LCK常规赛 | NS vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/cea428de-ce6d-4e87-9e15-c1b9475
+ cddf9
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/cea428de-ce6d-4e87-9e15-c1
+ b9475cddf9
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-dce6e01c-98bc-45fc-b62a-fc15e6bd54bf@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260415T100000Z
+DTEND:20260415T133000Z
+SUMMARY:2026 LCK常规赛 | KT vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/dce6e01c-98bc-45fc-b62a-fc15e6b
+ d54bf
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/dce6e01c-98bc-45fc-b62a-fc
+ 15e6bd54bf
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-f16921f8-c204-469b-bca2-d600814bc051@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260416T080000Z
+DTEND:20260416T113000Z
+SUMMARY:2026 LCK常规赛 | BRO vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/f16921f8-c204-469b-bca2-d600814
+ bc051
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/f16921f8-c204-469b-bca2-d6
+ 00814bc051
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-f1e26d79-6d76-4e46-af0e-9dc7535450c8@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260416T100000Z
+DTEND:20260416T133000Z
+SUMMARY:2026 LCK常规赛 | DNS vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/f1e26d79-6d76-4e46-af0e-9dc7535
+ 450c8
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/f1e26d79-6d76-4e46-af0e-9d
+ c7535450c8
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-1a71f103-a62f-44f2-a881-d5473a57c148@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260417T080000Z
+DTEND:20260417T113000Z
+SUMMARY:2026 LCK常规赛 | KRX vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/1a71f103-a62f-44f2-a881-d5473a5
+ 7c148
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/1a71f103-a62f-44f2-a881-d5
+ 473a57c148
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-a4c34404-065c-45e7-9319-e73f1159332d@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260417T100000Z
+DTEND:20260417T133000Z
+SUMMARY:2026 LCK常规赛 | DK vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/a4c34404-065c-45e7-9319-e73f115
+ 9332d
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/a4c34404-065c-45e7-9319-e7
+ 3f1159332d
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-3794b96e-f65b-46d1-880a-e697768b24e3@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260418T080000Z
+DTEND:20260418T113000Z
+SUMMARY:2026 LCK常规赛 | HLE vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/3794b96e-f65b-46d1-880a-e697768
+ b24e3
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/3794b96e-f65b-46d1-880a-e6
+ 97768b24e3
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-397fdae5-df2d-4a0c-a7e8-91e2806b7dfa@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260418T100000Z
+DTEND:20260418T133000Z
+SUMMARY:2026 LCK常规赛 | DNS vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/397fdae5-df2d-4a0c-a7e8-91e2806
+ b7dfa
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/397fdae5-df2d-4a0c-a7e8-91
+ e2806b7dfa
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-6d7076ed-5d0d-4fb1-846d-6794c94205e9@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260418T150000Z
+DTEND:20260418T183000Z
+SUMMARY:2026 lec春季赛 | GX vs NAVI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/6d7076ed-5d0d-4fb1-846d-6794c94
+ 205e9
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/6d7076ed-5d0d-4fb1-846d-67
+ 94c94205e9
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-b14b4069-44d8-440a-ac59-d0a57575380a@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260418T171500Z
+DTEND:20260418T204500Z
+SUMMARY:2026 lec春季赛 | G2 vs SK
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/b14b4069-44d8-440a-ac59-d0a5757
+ 5380a
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/b14b4069-44d8-440a-ac59-d0
+ a57575380a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-590a4e59-d783-4324-a833-e6b5b3980193@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260419T080000Z
+DTEND:20260419T113000Z
+SUMMARY:2026 LCK常规赛 | BRO vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/590a4e59-d783-4324-a833-e6b5b39
+ 80193
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/590a4e59-d783-4324-a833-e6
+ b5b3980193
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-751b5c8c-e4e0-4998-bee3-3dabd82e1247@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260419T100000Z
+DTEND:20260419T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/751b5c8c-e4e0-4998-bee3-3dabd82
+ e1247
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/751b5c8c-e4e0-4998-bee3-3d
+ abd82e1247
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-945eb636-7df9-4cc7-bb9e-f6ac20f825e4@lol-data-calendar
+DTSTAMP:20260323T113802Z
+LAST-MODIFIED:20260323T113802Z
+DTSTART:20260419T150000Z
+DTEND:20260419T183000Z
+SUMMARY:2026 lec春季赛 | VIT vs GX
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/945eb636-7df9-4cc7-bb9e-f6ac20f
+ 825e4
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/945eb636-7df9-4cc7-bb9e-f6
+ ac20f825e4
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-999fab20-9448-4c1a-bb28-ccbd31032fcd@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260419T171500Z
+DTEND:20260419T204500Z
+SUMMARY:2026 lec春季赛 | TH vs MKOI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/999fab20-9448-4c1a-bb28-ccbd310
+ 32fcd
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/999fab20-9448-4c1a-bb28-cc
+ bd31032fcd
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-1f9046e8-aa22-49b6-bbb9-129c4dc5f989@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260420T150000Z
+DTEND:20260420T183000Z
+SUMMARY:2026 lec春季赛 | SHFT vs G2
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/1f9046e8-aa22-49b6-bbb9-129c4dc
+ 5f989
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/1f9046e8-aa22-49b6-bbb9-12
+ 9c4dc5f989
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-a5d55cd7-6a53-48b6-9df6-8a3e933e8dff@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260420T171500Z
+DTEND:20260420T204500Z
+SUMMARY:2026 lec春季赛 | SK vs KC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/a5d55cd7-6a53-48b6-9df6-8a3e933
+ e8dff
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/a5d55cd7-6a53-48b6-9df6-8a
+ 3e933e8dff
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-8841d2ae-c7e5-49b1-b438-2293e81d4c79@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260422T080000Z
+DTEND:20260422T113000Z
+SUMMARY:2026 LCK常规赛 | KT vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/8841d2ae-c7e5-49b1-b438-2293e81
+ d4c79
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/8841d2ae-c7e5-49b1-b438-22
+ 93e81d4c79
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-850bdec0-495d-4c6b-87e9-2297dedd14bf@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260422T100000Z
+DTEND:20260422T133000Z
+SUMMARY:2026 LCK常规赛 | HLE vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/850bdec0-495d-4c6b-87e9-2297ded
+ d14bf
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/850bdec0-495d-4c6b-87e9-22
+ 97dedd14bf
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-a99b7429-983e-48d3-bb60-9690cab5c1c1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260423T080000Z
+DTEND:20260423T113000Z
+SUMMARY:2026 LCK常规赛 | BRO vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/a99b7429-983e-48d3-bb60-9690cab
+ 5c1c1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/a99b7429-983e-48d3-bb60-96
+ 90cab5c1c1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-c955bf5e-9d78-4205-a4ed-a6d9fcf62054@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260423T100000Z
+DTEND:20260423T133000Z
+SUMMARY:2026 LCK常规赛 | GEN vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/c955bf5e-9d78-4205-a4ed-a6d9fcf
+ 62054
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/c955bf5e-9d78-4205-a4ed-a6
+ d9fcf62054
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-be825dd0-de7b-4fbd-8cd5-6f8dfdb06ef9@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260424T080000Z
+DTEND:20260424T113000Z
+SUMMARY:2026 LCK常规赛 | BFX vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/be825dd0-de7b-4fbd-8cd5-6f8dfdb
+ 06ef9
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/be825dd0-de7b-4fbd-8cd5-6f
+ 8dfdb06ef9
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-85044e2b-b394-4b1c-b6f9-d6c7cc7da0b1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260424T100000Z
+DTEND:20260424T133000Z
+SUMMARY:2026 LCK常规赛 | HLE vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/85044e2b-b394-4b1c-b6f9-d6c7cc7
+ da0b1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/85044e2b-b394-4b1c-b6f9-d6
+ c7cc7da0b1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-7d2104a5-d32f-4657-acfe-8ea8ec35ebdb@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260424T144500Z
+DTEND:20260424T181500Z
+SUMMARY:2026 lec春季赛 | SHFT vs FNC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/7d2104a5-d32f-4657-acfe-8ea8ec3
+ 5ebdb
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/7d2104a5-d32f-4657-acfe-8e
+ a8ec35ebdb
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-7edd6aa2-4e11-4366-bc5b-aacd5f83e2db@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260424T163000Z
+DTEND:20260424T200000Z
+SUMMARY:2026 lec春季赛 | NAVI vs KC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/7edd6aa2-4e11-4366-bc5b-aacd5f8
+ 3e2db
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/7edd6aa2-4e11-4366-bc5b-aa
+ cd5f83e2db
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-6538878a-2d38-4c06-a9a8-6ed4e5d334b8@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260425T080000Z
+DTEND:20260425T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/6538878a-2d38-4c06-a9a8-6ed4e5d
+ 334b8
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/6538878a-2d38-4c06-a9a8-6e
+ d4e5d334b8
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-29bf6f3b-3068-4501-9f2b-78c7e08faa90@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260425T100000Z
+DTEND:20260425T133000Z
+SUMMARY:2026 LCK常规赛 | DK vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/29bf6f3b-3068-4501-9f2b-78c7e08
+ faa90
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/29bf6f3b-3068-4501-9f2b-78
+ c7e08faa90
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-10e0633e-1a10-437f-88cc-80d9da56f65b@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260425T144500Z
+DTEND:20260425T181500Z
+SUMMARY:2026 lec春季赛 | FNC vs NAVI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/10e0633e-1a10-437f-88cc-80d9da5
+ 6f65b
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/10e0633e-1a10-437f-88cc-80
+ d9da56f65b
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-1256270f-cebf-41b4-bc21-aad4df856b55@lol-data-calendar
+DTSTAMP:20260323T113803Z
+LAST-MODIFIED:20260323T113803Z
+DTSTART:20260425T163000Z
+DTEND:20260425T200000Z
+SUMMARY:2026 lec春季赛 | KC vs SHFT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/1256270f-cebf-41b4-bc21-aad4df8
+ 56b55
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/1256270f-cebf-41b4-bc21-aa
+ d4df856b55
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d28d29fa-5ef9-4a61-9b9a-179c0b6ed4e3@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260426T080000Z
+DTEND:20260426T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d28d29fa-5ef9-4a61-9b9a-179c0b6
+ ed4e3
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/d28d29fa-5ef9-4a61-9b9a-17
+ 9c0b6ed4e3
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-b0e16509-591b-4636-bd66-8416fc4c0d02@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260426T100000Z
+DTEND:20260426T133000Z
+SUMMARY:2026 LCK常规赛 | NS vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/b0e16509-591b-4636-bd66-8416fc4
+ c0d02
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/b0e16509-591b-4636-bd66-84
+ 16fc4c0d02
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-adc3f303-cbc5-422c-87f5-44e826cb1710@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260426T144500Z
+DTEND:20260426T181500Z
+SUMMARY:2026 lec春季赛 | SHFT vs NAVI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/adc3f303-cbc5-422c-87f5-44e826c
+ b1710
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/adc3f303-cbc5-422c-87f5-44
+ e826cb1710
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-364382f3-65fd-4723-833a-be0ea02dfb49@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260426T163000Z
+DTEND:20260426T200000Z
+SUMMARY:2026 lec春季赛 | KC vs FNC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/364382f3-65fd-4723-833a-be0ea02
+ dfb49
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/364382f3-65fd-4723-833a-be
+ 0ea02dfb49
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-0a3ad4d0-9431-453f-928d-87523ffb6488@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260429T080000Z
+DTEND:20260429T113000Z
+SUMMARY:2026 LCK常规赛 | NS vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/0a3ad4d0-9431-453f-928d-87523ff
+ b6488
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/0a3ad4d0-9431-453f-928d-87
+ 523ffb6488
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-5f4298de-fab6-48c1-b30e-4b046b4a06e0@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260429T100000Z
+DTEND:20260429T133000Z
+SUMMARY:2026 LCK常规赛 | KT vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/5f4298de-fab6-48c1-b30e-4b046b4
+ a06e0
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/5f4298de-fab6-48c1-b30e-4b
+ 046b4a06e0
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-debc47bd-a922-4d63-9f9c-6cf0739c2ea9@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260430T080000Z
+DTEND:20260430T113000Z
+SUMMARY:2026 LCK常规赛 | GEN vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/debc47bd-a922-4d63-9f9c-6cf0739
+ c2ea9
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/debc47bd-a922-4d63-9f9c-6c
+ f0739c2ea9
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-e697960e-ae6c-4123-b17b-952318059336@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260430T100000Z
+DTEND:20260430T133000Z
+SUMMARY:2026 LCK常规赛 | BFX vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/e697960e-ae6c-4123-b17b-9523180
+ 59336
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/e697960e-ae6c-4123-b17b-95
+ 2318059336
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-acb9cbf1-0741-4066-8d7f-fd9c92342d28@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260501T080000Z
+DTEND:20260501T113000Z
+SUMMARY:2026 LCK常规赛 | DNS vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/acb9cbf1-0741-4066-8d7f-fd9c923
+ 42d28
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/acb9cbf1-0741-4066-8d7f-fd
+ 9c92342d28
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-6c0d3c98-4bb3-45a8-9dad-0082f2c3f796@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260501T100000Z
+DTEND:20260501T133000Z
+SUMMARY:2026 LCK常规赛 | HLE vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/6c0d3c98-4bb3-45a8-9dad-0082f2c
+ 3f796
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/6c0d3c98-4bb3-45a8-9dad-00
+ 82f2c3f796
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-aafecd9d-0fea-447d-a3b4-d2208c2771db@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260502T080000Z
+DTEND:20260502T113000Z
+SUMMARY:2026 LCK常规赛 | GEN vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/aafecd9d-0fea-447d-a3b4-d2208c2
+ 771db
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/aafecd9d-0fea-447d-a3b4-d2
+ 208c2771db
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-55db2adb-a0a7-447c-816b-eb22ef59e850@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260502T100000Z
+DTEND:20260502T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/55db2adb-a0a7-447c-816b-eb22ef5
+ 9e850
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/55db2adb-a0a7-447c-816b-eb
+ 22ef59e850
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-986af9b8-16a2-482f-980c-920b62b74fff@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260502T150000Z
+DTEND:20260502T183000Z
+SUMMARY:2026 lec春季赛 | FNC vs TH
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/986af9b8-16a2-482f-980c-920b62b
+ 74fff
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/986af9b8-16a2-482f-980c-92
+ 0b62b74fff
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-fef66db2-7d58-4e0a-b85e-aa65ac274265@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260502T171500Z
+DTEND:20260502T204500Z
+SUMMARY:2026 lec春季赛 | VIT vs SK
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/fef66db2-7d58-4e0a-b85e-aa65ac2
+ 74265
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/fef66db2-7d58-4e0a-b85e-aa
+ 65ac274265
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-afc97759-dbd3-4531-b2c0-6a2e3ef032ca@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260503T080000Z
+DTEND:20260503T113000Z
+SUMMARY:2026 LCK常规赛 | KT vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/afc97759-dbd3-4531-b2c0-6a2e3ef
+ 032ca
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/afc97759-dbd3-4531-b2c0-6a
+ 2e3ef032ca
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-c9c3c82a-d98e-4a18-a73c-696998af6c82@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260503T100000Z
+DTEND:20260503T133000Z
+SUMMARY:2026 LCK常规赛 | DNS vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/c9c3c82a-d98e-4a18-a73c-696998a
+ f6c82
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/c9c3c82a-d98e-4a18-a73c-69
+ 6998af6c82
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-df907d92-a78d-4790-96f1-523bf87f04e9@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260503T150000Z
+DTEND:20260503T183000Z
+SUMMARY:2026 lec春季赛 | TH vs SHFT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/df907d92-a78d-4790-96f1-523bf87
+ f04e9
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/df907d92-a78d-4790-96f1-52
+ 3bf87f04e9
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-b07fe7b7-b6cb-4516-b461-485e0b58ec25@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260503T171500Z
+DTEND:20260503T204500Z
+SUMMARY:2026 lec春季赛 | G2 vs NAVI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/b07fe7b7-b6cb-4516-b461-485e0b5
+ 8ec25
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/b07fe7b7-b6cb-4516-b461-48
+ 5e0b58ec25
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-5314d43e-7d90-457e-983c-9bfa6e666180@lol-data-calendar
+DTSTAMP:20260323T113804Z
+LAST-MODIFIED:20260323T113804Z
+DTSTART:20260504T150000Z
+DTEND:20260504T183000Z
+SUMMARY:2026 lec春季赛 | FNC vs VIT
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/5314d43e-7d90-457e-983c-9bfa6e6
+ 66180
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/5314d43e-7d90-457e-983c-9b
+ fa6e666180
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-4a2fe332-c06b-4aab-ac05-fde16fd07266@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260504T171500Z
+DTEND:20260504T204500Z
+SUMMARY:2026 lec春季赛 | SHFT vs MKOI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/4a2fe332-c06b-4aab-ac05-fde16fd
+ 07266
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/4a2fe332-c06b-4aab-ac05-fd
+ e16fd07266
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-2c721dff-2ef1-4942-860f-ae35702fee8a@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260506T080000Z
+DTEND:20260506T113000Z
+SUMMARY:2026 LCK常规赛 | GEN vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/2c721dff-2ef1-4942-860f-ae35702
+ fee8a
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/2c721dff-2ef1-4942-860f-ae
+ 35702fee8a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-acb7494e-40cd-4136-a449-15bb18d9efc1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260506T100000Z
+DTEND:20260506T133000Z
+SUMMARY:2026 LCK常规赛 | HLE vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/acb7494e-40cd-4136-a449-15bb18d
+ 9efc1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/acb7494e-40cd-4136-a449-15
+ bb18d9efc1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-c36968b9-ba48-4338-aecf-4cc8fae535fd@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260507T080000Z
+DTEND:20260507T113000Z
+SUMMARY:2026 LCK常规赛 | DK vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/c36968b9-ba48-4338-aecf-4cc8fae
+ 535fd
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/c36968b9-ba48-4338-aecf-4c
+ c8fae535fd
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-cfa821a8-a21d-4d42-89cf-ae9df04a3c8e@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260507T100000Z
+DTEND:20260507T133000Z
+SUMMARY:2026 LCK常规赛 | BRO vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/cfa821a8-a21d-4d42-89cf-ae9df04
+ a3c8e
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/cfa821a8-a21d-4d42-89cf-ae
+ 9df04a3c8e
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-4783e83e-4229-4898-9438-1bd5b03405c1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260508T080000Z
+DTEND:20260508T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/4783e83e-4229-4898-9438-1bd5b03
+ 405c1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/4783e83e-4229-4898-9438-1b
+ d5b03405c1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-fce97951-844c-4696-969b-03ff6a86670b@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260508T100000Z
+DTEND:20260508T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/fce97951-844c-4696-969b-03ff6a8
+ 6670b
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/fce97951-844c-4696-969b-03
+ ff6a86670b
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-53f50e04-fe18-4c92-be11-e1aa89c8f9c7@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260508T140000Z
+DTEND:20260508T173000Z
+SUMMARY:2026 lec春季赛 | KC vs G2
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/53f50e04-fe18-4c92-be11-e1aa89c
+ 8f9c7
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/53f50e04-fe18-4c92-be11-e1
+ aa89c8f9c7
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-f4adaad6-632f-41a1-8c09-2bf3fd73dce4@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260508T170000Z
+DTEND:20260508T203000Z
+SUMMARY:2026 lec春季赛 | GX vs MKOI
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/f4adaad6-632f-41a1-8c09-2bf3fd7
+ 3dce4
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/f4adaad6-632f-41a1-8c09-2b
+ f3fd73dce4
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-0bf12156-ce6f-456c-b618-ce8e92c89b87@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260509T080000Z
+DTEND:20260509T113000Z
+SUMMARY:2026 LCK常规赛 | KT vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/0bf12156-ce6f-456c-b618-ce8e92c
+ 89b87
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/0bf12156-ce6f-456c-b618-ce
+ 8e92c89b87
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-186e2134-5540-4574-b9c0-c36b551f0d51@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260509T100000Z
+DTEND:20260509T133000Z
+SUMMARY:2026 LCK常规赛 | NS vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/186e2134-5540-4574-b9c0-c36b551
+ f0d51
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/186e2134-5540-4574-b9c0-c3
+ 6b551f0d51
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-e5496e14-0bd4-44c9-af75-86df923ed537@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260509T140000Z
+DTEND:20260509T173000Z
+SUMMARY:2026 lec春季赛 | G2 vs GX
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/e5496e14-0bd4-44c9-af75-86df923
+ ed537
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/e5496e14-0bd4-44c9-af75-86
+ df923ed537
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-fdc7dc05-8c56-4b1c-9e47-6f0f141c033c@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260509T170000Z
+DTEND:20260509T203000Z
+SUMMARY:2026 lec春季赛 | MKOI vs KC
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/fdc7dc05-8c56-4b1c-9e47-6f0f141
+ c033c
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/fdc7dc05-8c56-4b1c-9e47-6f
+ 0f141c033c
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-b2841bbb-9603-4a0c-85ae-27f4dead28c4@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260510T080000Z
+DTEND:20260510T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/b2841bbb-9603-4a0c-85ae-27f4dea
+ d28c4
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/b2841bbb-9603-4a0c-85ae-27
+ f4dead28c4
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-84b87766-a2eb-4816-8b33-43649c60a530@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260510T100000Z
+DTEND:20260510T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/84b87766-a2eb-4816-8b33-43649c6
+ 0a530
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/84b87766-a2eb-4816-8b33-43
+ 649c60a530
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-016d9b2d-dfc4-49a3-8ee8-c96ead2b565d@lol-data-calendar
+DTSTAMP:20260323T113805Z
+LAST-MODIFIED:20260323T113805Z
+DTSTART:20260510T130000Z
+DTEND:20260510T163000Z
+SUMMARY:2026 lec春季赛 | KC vs GX
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/016d9b2d-dfc4-49a3-8ee8-c96ead2
+ b565d
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/016d9b2d-dfc4-49a3-8ee8-c9
+ 6ead2b565d
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-99e3a483-9876-4187-a7ff-b7614371addc@lol-data-calendar
+DTSTAMP:20260323T113806Z
+LAST-MODIFIED:20260323T113806Z
+DTSTART:20260510T160000Z
+DTEND:20260510T193000Z
+SUMMARY:2026 lec春季赛 | MKOI vs G2
+DESCRIPTION:赛事：2026 lec春季赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/99e3a483-9876-4187-a7ff-b761437
+ 1addc
+LOCATION:2026 lec春季赛
+URL:https://lol-calendar-sync.vercel.app/match/99e3a483-9876-4187-a7ff-b7
+ 614371addc
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d60f8ff2-f485-4065-b41f-1a2cb2cd7a85@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260513T080000Z
+DTEND:20260513T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d60f8ff2-f485-4065-b41f-1a2cb2c
+ d7a85
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/d60f8ff2-f485-4065-b41f-1a
+ 2cb2cd7a85
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-629b183d-8a99-4586-bbf9-45b5f2c722ed@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260513T100000Z
+DTEND:20260513T133000Z
+SUMMARY:2026 LCK常规赛 | DNS vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/629b183d-8a99-4586-bbf9-45b5f2c
+ 722ed
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/629b183d-8a99-4586-bbf9-45
+ b5f2c722ed
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-42ce1e8e-c33d-4b3a-bdf0-cb5532475258@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260514T080000Z
+DTEND:20260514T113000Z
+SUMMARY:2026 LCK常规赛 | BFX vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/42ce1e8e-c33d-4b3a-bdf0-cb55324
+ 75258
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/42ce1e8e-c33d-4b3a-bdf0-cb
+ 5532475258
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-cc1f2f78-b9f6-4820-8a86-ccd59a6946c1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260514T100000Z
+DTEND:20260514T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/cc1f2f78-b9f6-4820-8a86-ccd59a6
+ 946c1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/cc1f2f78-b9f6-4820-8a86-cc
+ d59a6946c1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-985286b5-c5ff-4248-99fb-76257198e5d4@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260515T080000Z
+DTEND:20260515T113000Z
+SUMMARY:2026 LCK常规赛 | HLE vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/985286b5-c5ff-4248-99fb-7625719
+ 8e5d4
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/985286b5-c5ff-4248-99fb-76
+ 257198e5d4
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-0962732c-80e6-4651-b47a-c0edb99a2a55@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260515T100000Z
+DTEND:20260515T133000Z
+SUMMARY:2026 LCK常规赛 | BRO vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/0962732c-80e6-4651-b47a-c0edb99
+ a2a55
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/0962732c-80e6-4651-b47a-c0
+ edb99a2a55
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-ddd9c34f-968e-4972-871d-879750cb4aec@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260516T080000Z
+DTEND:20260516T113000Z
+SUMMARY:2026 LCK常规赛 | GEN vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/ddd9c34f-968e-4972-871d-879750c
+ b4aec
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/ddd9c34f-968e-4972-871d-87
+ 9750cb4aec
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-159f4d34-1061-40e4-87fd-998fa93453a1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260516T100000Z
+DTEND:20260516T133000Z
+SUMMARY:2026 LCK常规赛 | BFX vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/159f4d34-1061-40e4-87fd-998fa93
+ 453a1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/159f4d34-1061-40e4-87fd-99
+ 8fa93453a1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-8fe8cd8e-bbd9-4274-b237-b6c85df98720@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260517T080000Z
+DTEND:20260517T113000Z
+SUMMARY:2026 LCK常规赛 | HLE vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/8fe8cd8e-bbd9-4274-b237-b6c85df
+ 98720
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/8fe8cd8e-bbd9-4274-b237-b6
+ c85df98720
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-e6aacca4-be5c-4158-b490-b0a5e702373e@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260517T100000Z
+DTEND:20260517T133000Z
+SUMMARY:2026 LCK常规赛 | KRX vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/e6aacca4-be5c-4158-b490-b0a5e70
+ 2373e
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/e6aacca4-be5c-4158-b490-b0
+ a5e702373e
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d726e172-5eae-4429-8129-312f47b858f3@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260520T080000Z
+DTEND:20260520T113000Z
+SUMMARY:2026 LCK常规赛 | T1 vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d726e172-5eae-4429-8129-312f47b
+ 858f3
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/d726e172-5eae-4429-8129-31
+ 2f47b858f3
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-838e584a-f968-4b25-bb0f-52788309dadb@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260520T100000Z
+DTEND:20260520T133000Z
+SUMMARY:2026 LCK常规赛 | NS vs KT
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/838e584a-f968-4b25-bb0f-5278830
+ 9dadb
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/838e584a-f968-4b25-bb0f-52
+ 788309dadb
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-cf688579-6a46-4948-975c-042efe948217@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260521T080000Z
+DTEND:20260521T113000Z
+SUMMARY:2026 LCK常规赛 | BFX vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/cf688579-6a46-4948-975c-042efe9
+ 48217
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/cf688579-6a46-4948-975c-04
+ 2efe948217
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d849a303-0b1f-480d-ac6b-ce7cb4181b8a@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260521T100000Z
+DTEND:20260521T133000Z
+SUMMARY:2026 LCK常规赛 | DK vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d849a303-0b1f-480d-ac6b-ce7cb41
+ 81b8a
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/d849a303-0b1f-480d-ac6b-ce
+ 7cb4181b8a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-31444f57-9754-4261-bb45-bdcc5b01e97d@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260522T080000Z
+DTEND:20260522T113000Z
+SUMMARY:2026 LCK常规赛 | DNS vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/31444f57-9754-4261-bb45-bdcc5b0
+ 1e97d
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/31444f57-9754-4261-bb45-bd
+ cc5b01e97d
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-1f36f406-c7d3-41dc-95a1-71a5798e48e7@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260522T100000Z
+DTEND:20260522T133000Z
+SUMMARY:2026 LCK常规赛 | KT vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/1f36f406-c7d3-41dc-95a1-71a5798
+ e48e7
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/1f36f406-c7d3-41dc-95a1-71
+ a5798e48e7
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-600e2240-b179-40dc-8a53-176d32c9316a@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260523T080000Z
+DTEND:20260523T113000Z
+SUMMARY:2026 LCK常规赛 | DK vs BFX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/600e2240-b179-40dc-8a53-176d32c
+ 9316a
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/600e2240-b179-40dc-8a53-17
+ 6d32c9316a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-8c9213b8-3f4f-4afc-8db8-7598b9af8ef0@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260523T100000Z
+DTEND:20260523T133000Z
+SUMMARY:2026 LCK常规赛 | NS vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/8c9213b8-3f4f-4afc-8db8-7598b9a
+ f8ef0
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/8c9213b8-3f4f-4afc-8db8-75
+ 98b9af8ef0
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-afb9d3d5-b576-498d-ad1b-d668dc2c40b6@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260524T080000Z
+DTEND:20260524T113000Z
+SUMMARY:2026 LCK常规赛 | DNS vs GEN
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/afb9d3d5-b576-498d-ad1b-d668dc2
+ c40b6
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/afb9d3d5-b576-498d-ad1b-d6
+ 68dc2c40b6
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-c0096c7e-757d-40e4-a319-fdd54adde64b@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260524T100000Z
+DTEND:20260524T133000Z
+SUMMARY:2026 LCK常规赛 | BRO vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/c0096c7e-757d-40e4-a319-fdd54ad
+ de64b
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/c0096c7e-757d-40e4-a319-fd
+ d54adde64b
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-0cf34843-d09a-4c6a-883c-81728db3fa3b@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260527T080000Z
+DTEND:20260527T113000Z
+SUMMARY:2026 LCK常规赛 | GEN vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/0cf34843-d09a-4c6a-883c-81728db
+ 3fa3b
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/0cf34843-d09a-4c6a-883c-81
+ 728db3fa3b
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-4b7512a1-36f7-419a-9e73-4306fb2b335c@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260527T100000Z
+DTEND:20260527T133000Z
+SUMMARY:2026 LCK常规赛 | BFX vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/4b7512a1-36f7-419a-9e73-4306fb2
+ b335c
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/4b7512a1-36f7-419a-9e73-43
+ 06fb2b335c
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-f0ea5333-b18d-4676-bdc7-23ba3a9ba345@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260528T080000Z
+DTEND:20260528T113000Z
+SUMMARY:2026 LCK常规赛 | DNS vs NS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/f0ea5333-b18d-4676-bdc7-23ba3a9
+ ba345
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/f0ea5333-b18d-4676-bdc7-23
+ ba3a9ba345
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-9042631a-426c-4bfa-835d-f451028965b1@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260528T100000Z
+DTEND:20260528T133000Z
+SUMMARY:2026 LCK常规赛 | KT vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/9042631a-426c-4bfa-835d-f451028
+ 965b1
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/9042631a-426c-4bfa-835d-f4
+ 51028965b1
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-003b0fa5-17cf-4816-993e-456db5a6a711@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260529T080000Z
+DTEND:20260529T113000Z
+SUMMARY:2026 LCK常规赛 | DK vs KRX
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/003b0fa5-17cf-4816-993e-456db5a
+ 6a711
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/003b0fa5-17cf-4816-993e-45
+ 6db5a6a711
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-225536ae-e570-45ae-b2a6-1fb2bd82829a@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260529T100000Z
+DTEND:20260529T133000Z
+SUMMARY:2026 LCK常规赛 | GEN vs BRO
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/225536ae-e570-45ae-b2a6-1fb2bd8
+ 2829a
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/225536ae-e570-45ae-b2a6-1f
+ b2bd82829a
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-62cf7359-9377-45c4-834e-3caaee331f28@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260530T080000Z
+DTEND:20260530T113000Z
+SUMMARY:2026 LCK常规赛 | KT vs DNS
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/62cf7359-9377-45c4-834e-3caaee3
+ 31f28
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/62cf7359-9377-45c4-834e-3c
+ aaee331f28
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-d3413db8-ee4f-4fd1-96be-7a141ee1de60@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260530T100000Z
+DTEND:20260530T133000Z
+SUMMARY:2026 LCK常规赛 | BFX vs T1
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/d3413db8-ee4f-4fd1-96be-7a141ee
+ 1de60
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/d3413db8-ee4f-4fd1-96be-7a
+ 141ee1de60
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-30aa36e8-a9bf-4d91-bb23-d395109d7b04@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260531T080000Z
+DTEND:20260531T113000Z
+SUMMARY:2026 LCK常规赛 | BRO vs HLE
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/30aa36e8-a9bf-4d91-bb23-d395109
+ d7b04
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/30aa36e8-a9bf-4d91-bb23-d3
+ 95109d7b04
+STATUS:CONFIRMED
+END:VEVENT
+BEGIN:VEVENT
+UID:lol-match-b5ceec55-3199-47b7-8774-196630efbee3@lol-data-calendar
+DTSTAMP:20260323T143425Z
+LAST-MODIFIED:20260323T143425Z
+DTSTART:20260531T100000Z
+DTEND:20260531T133000Z
+SUMMARY:2026 LCK常规赛 | NS vs DK
+DESCRIPTION:赛事：2026 LCK常规赛\n阶段：Regular Season\n赛制：BO3\n状态：SCHEDULED\n链接：h
+ ttps://lol-calendar-sync.vercel.app/match/b5ceec55-3199-47b7-8774-196630e
+ fbee3
+LOCATION:2026 LCK常规赛
+URL:https://lol-calendar-sync.vercel.app/match/b5ceec55-3199-47b7-8774-19
+ 6630efbee3
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR
