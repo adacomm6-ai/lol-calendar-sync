@@ -7,7 +7,7 @@ type CalendarExportActionsProps = {
 };
 
 const IPHONE_CALENDAR_HTTP_URL =
-    'https://cdn.jsdelivr.net/gh/adacomm6-ai/lol-calendar-sync@main/iphone-calendar.ics';
+    'https://raw.githubusercontent.com/adacomm6-ai/lol-calendar-sync/main/iphone-calendar.ics';
 
 export default function CalendarExportActions({ calendarPath }: CalendarExportActionsProps) {
     void calendarPath;
@@ -17,8 +17,8 @@ export default function CalendarExportActions({ calendarPath }: CalendarExportAc
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(IPHONE_CALENDAR_HTTP_URL);
-            setCopyStatus('订阅链接已复制，可直接粘贴到 iPhone 的“添加已订阅的日历”。');
-            window.setTimeout(() => setCopyStatus(''), 2200);
+            setCopyStatus('链接已复制。iPhone 上建议先删除旧日历，再用这个新链接重新导入。');
+            window.setTimeout(() => setCopyStatus(''), 2400);
         } catch {
             setCopyStatus('复制失败，请手动长按按钮链接后再复制。');
             window.setTimeout(() => setCopyStatus(''), 3000);
@@ -28,9 +28,9 @@ export default function CalendarExportActions({ calendarPath }: CalendarExportAc
     return (
         <div className="flex flex-col gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-3 py-3 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
-                <div className="text-sm font-black text-blue-900">苹果日历（LPL + LCK）</div>
+                <div className="text-sm font-black text-blue-900">苹果日历（仅 LPL + LCK）</div>
                 <div className="text-xs text-blue-700">
-                    iPhone 固定版只保留 LPL 和 LCK，已去除 LEC。复制链接可用于“添加已订阅的日历”；如果你之前导入过旧版本地日历，建议先删除旧版再重新导入，避免旧赛程残留。
+                    这个 iPhone 固定版只保留 LPL 和 LCK，已经去掉 LEC。若你之前导入过旧版本，请先删除旧日历，再导入新版，避免旧赛程残留。
                 </div>
             </div>
 
@@ -46,7 +46,7 @@ export default function CalendarExportActions({ calendarPath }: CalendarExportAc
                     onClick={handleCopy}
                     className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
                 >
-                    复制订阅链接
+                    复制导入链接
                 </button>
             </div>
 

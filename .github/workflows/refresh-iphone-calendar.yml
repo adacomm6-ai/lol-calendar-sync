@@ -45,3 +45,6 @@ jobs:
           git add iphone-calendar.ics
           git commit -m "chore: refresh iphone calendar snapshot"
           git push
+
+      - name: Purge jsDelivr cache
+        run: curl -fsSL --retry 3 --retry-all-errors "https://purge.jsdelivr.net/gh/adacomm6-ai/lol-calendar-sync@main/iphone-calendar.ics"
