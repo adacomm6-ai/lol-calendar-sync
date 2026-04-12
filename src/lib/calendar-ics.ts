@@ -98,20 +98,59 @@ function estimateDurationMinutes(format: string | null | undefined) {
   return 210;
 }
 
+function looksCorruptedDisplayText(value: string | null | undefined) {
+  const text = String(value || '').trim();
+  if (!text) return false;
+  if (/\?{3,}/.test(text)) return true;
+  return /馃|绗|鏆|寰风|鍏|璧|閫|鐐|鍒|璇|棰|鈥|锔|鉁|猬|柤|�/.test(text);
+}
+
+function getSafeText(value: string | null | undefined, fallback: string) {
+  const text = String(value || '').trim();
+  if (!text || looksCorruptedDisplayText(text)) return fallback;
+  return text;
+}
+
+function getSafeTournamentLabel(match: CalendarMatch) {
+  const rawTournament = String(match.tournament || '').trim();
+  if (!rawTournament) return 'Unknown Tournament';
+  if (!looksCorruptedDisplayText(rawTournament)) return rawTournament;
+
+  const upper = rawTournament.toUpperCase();
+  if (upper.includes('LPL')) return '2026 LPL Split 1';
+  if (upper.includes('LCK')) return '2026 LCK Regular Season';
+  return 'Unknown Tournament';
+}
+
+function getSafeStageLabel(match: CalendarMatch) {
+  const rawStage = String(match.stage || '').trim();
+  if (rawStage && !looksCorruptedDisplayText(rawStage)) return rawStage;
+
+  return 'Regular Season';
+}
+
+function getSafeFormatLabel(match: CalendarMatch) {
+  return getSafeText(String(match.format || '').trim().toUpperCase(), 'BO3');
+}
+
+function getSafeTeamDisplayName(value: string | null | undefined) {
+  return getSafeText(value, 'TBD');
+}
+
 function buildEventTitle(match: CalendarMatch) {
-  const teamA = match.teamA?.shortName || match.teamA?.name || '待定';
-  const teamB = match.teamB?.shortName || match.teamB?.name || '待定';
-  const tournament = String(match.tournament || '').trim();
+  const teamA = getSafeTeamDisplayName(match.teamA?.shortName || match.teamA?.name);
+  const teamB = getSafeTeamDisplayName(match.teamB?.shortName || match.teamB?.name);
+  const tournament = getSafeTournamentLabel(match);
   return tournament ? `${tournament} | ${teamA} vs ${teamB}` : `${teamA} vs ${teamB}`;
 }
 
 function buildEventDescription(match: CalendarMatch, matchUrl: string) {
   const lines = [
-    `赛事：${String(match.tournament || '').trim() || '未命名赛事'}`,
-    `阶段：${String(match.stage || '').trim() || '未标注阶段'}`,
-    `赛制：${String(match.format || '').trim().toUpperCase() || 'BO3'}`,
-    `状态：${String(match.status || '').trim().toUpperCase() || 'SCHEDULED'}`,
-    `链接：${matchUrl}`,
+    `Tournament: ${getSafeTournamentLabel(match)}`,
+    `Stage: ${getSafeStageLabel(match)}`,
+    `Format: ${getSafeFormatLabel(match)}`,
+    `Status: ${String(match.status || '').trim().toUpperCase() || 'SCHEDULED'}`,
+    `Link: ${matchUrl}`,
   ];
   return lines.join('\n');
 }
@@ -431,7 +470,7 @@ function createIcsBody(args: {
     lines.push(foldIcsLine(`SUMMARY:${escapeIcsText(buildEventTitle(match))}`));
     lines.push(foldIcsLine(`DESCRIPTION:${escapeIcsText(buildEventDescription(match, matchUrl))}`));
     lines.push(
-      foldIcsLine(`LOCATION:${escapeIcsText(String(match.tournament || '').trim() || 'LOL赛事')}`),
+      foldIcsLine(`LOCATION:${escapeIcsText(getSafeTournamentLabel(match) || 'LOL赛事')}`),
     );
     lines.push(foldIcsLine(`URL:${matchUrl}`));
     lines.push('STATUS:CONFIRMED');
