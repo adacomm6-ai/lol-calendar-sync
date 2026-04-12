@@ -17,7 +17,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download latest calendar snapshot
-        run: curl -fsSL "https://lol-calendar-sync.vercel.app/calendar.ics?regions=LPL,LCK" -o iphone-calendar.ics
+        run: curl -fsSL --retry 3 --retry-all-errors "https://lol-calendar-sync.vercel.app/iphone-calendar.ics" -o iphone-calendar.ics
+
+      - name: Validate calendar snapshot
+        run: |
+          if grep -qi "lec" iphone-calendar.ics; then
+            echo "Snapshot still contains LEC events."
+            exit 1
+          fi
+          if ! grep -q "LPL" iphone-calendar.ics; then
+            echo "Snapshot is missing LPL events."
+            exit 1
+          fi
+          if ! grep -q "LCK" iphone-calendar.ics; then
+            echo "Snapshot is missing LCK events."
+            exit 1
+          fi
 
       - name: Commit updated snapshot
         run: |
