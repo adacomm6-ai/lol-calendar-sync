@@ -39,6 +39,10 @@
   "exclude": [
     "node_modules",
     "backups",
-    "**/backups/**"
+    "**/backups/**",
+    "__safety_backups",
+    "**/__safety_backups/**",
+    "__safety_backups__",
+    "**/__safety_backups__/**"
   ]
 }

@@ -1,45 +1,50 @@
 'use client';
 
-<<<<<<< HEAD
-import { useMemo, useState } from 'react';
-=======
 import { useState } from 'react';
->>>>>>> 78fcb2f (fix: stabilize iphone calendar for lpl and lck)
 
 type CalendarExportActionsProps = {
     calendarPath: string;
 };
 
 const IPHONE_CALENDAR_HTTP_URL =
-<<<<<<< HEAD
     'https://raw.githubusercontent.com/adacomm6-ai/lol-calendar-sync/main/iphone-calendar.ics';
-const IPHONE_CALENDAR_LOCAL_DOWNLOAD_URL = '/iphone-calendar.ics?download=1';
+const IPHONE_CALENDAR_LOCAL_DOWNLOAD_BASE_URL =
+    '/iphone-calendar.ics?download=1&status=upcoming&regions=LPL,LCK&days=120';
 
 export default function CalendarExportActions({ calendarPath }: CalendarExportActionsProps) {
     const [copyStatus, setCopyStatus] = useState('');
-    const localDownloadUrl = useMemo(() => {
-        void calendarPath;
-        return IPHONE_CALENDAR_LOCAL_DOWNLOAD_URL;
-    }, [calendarPath]);
-=======
-    'https://cdn.jsdelivr.net/gh/adacomm6-ai/lol-calendar-sync@main/iphone-calendar.ics';
-
-export default function CalendarExportActions({ calendarPath }: CalendarExportActionsProps) {
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [lplFromDate, setLplFromDate] = useState('');
+    const [lplToDate, setLplToDate] = useState('');
+    const [lckFromDate, setLckFromDate] = useState('');
+    const [lckToDate, setLckToDate] = useState('');
     void calendarPath;
 
-    const [copyStatus, setCopyStatus] = useState('');
->>>>>>> 78fcb2f (fix: stabilize iphone calendar for lpl and lck)
+    const handleDefaultDownload = () => {
+        const downloadUrl = `${IPHONE_CALENDAR_LOCAL_DOWNLOAD_BASE_URL}&_ts=${Date.now()}`;
+        window.location.href = downloadUrl;
+    };
+
+    const handleRegionDateDownload = () => {
+        const params = new URLSearchParams();
+        params.set('download', '1');
+        params.set('status', 'upcoming');
+        params.set('regions', 'LPL,LCK');
+        params.set('days', '120');
+        params.set('exportMode', 'full');
+        if (lplFromDate) params.set('from_LPL', lplFromDate);
+        if (lplToDate) params.set('to_LPL', lplToDate);
+        if (lckFromDate) params.set('from_LCK', lckFromDate);
+        if (lckToDate) params.set('to_LCK', lckToDate);
+        params.set('_ts', String(Date.now()));
+        window.location.href = `/iphone-calendar.ics?${params.toString()}`;
+    };
 
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(IPHONE_CALENDAR_HTTP_URL);
-<<<<<<< HEAD
             setCopyStatus('链接已复制。若网站只能本地打开，请先在电脑下载，再发到手机导入。');
             window.setTimeout(() => setCopyStatus(''), 2400);
-=======
-            setCopyStatus('订阅链接已复制，可直接粘贴到 iPhone 的“添加已订阅的日历”。');
-            window.setTimeout(() => setCopyStatus(''), 2200);
->>>>>>> 78fcb2f (fix: stabilize iphone calendar for lpl and lck)
         } catch {
             setCopyStatus('复制失败，请手动长按按钮链接后再复制。');
             window.setTimeout(() => setCopyStatus(''), 3000);
@@ -47,41 +52,115 @@ export default function CalendarExportActions({ calendarPath }: CalendarExportAc
     };
 
     return (
-        <div className="flex flex-col gap-2 rounded-xl border border-blue-100 bg-blue-50/80 px-3 py-3 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-1">
-<<<<<<< HEAD
-                <div className="text-sm font-black text-blue-900">苹果日历（仅 LPL + LCK）</div>
-                <div className="text-xs text-blue-700">
-                    电脑本地点“下载导入苹果日历”会直接下载 .ics 文件。把这个文件发到 iPhone 后再导入日历；若你之前导入过旧版本，请先删除旧日历，避免旧赛程残留。
-=======
-                <div className="text-sm font-black text-blue-900">苹果日历（LPL + LCK）</div>
-                <div className="text-xs text-blue-700">
-                    iPhone 固定版只保留 LPL 和 LCK，已去除 LEC。复制链接可用于“添加已订阅的日历”；如果你之前导入过旧版本地日历，建议先删除旧版再重新导入，避免旧赛程残留。
->>>>>>> 78fcb2f (fix: stabilize iphone calendar for lpl and lck)
+        <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-3 md:bottom-6 md:right-6">
+            {panelOpen ? (
+                <div className="w-[min(92vw,380px)] rounded-2xl border border-blue-100 bg-white/95 p-4 shadow-2xl backdrop-blur">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                            <div className="text-sm font-black text-blue-900">苹果日历导出</div>
+                            <div className="text-xs leading-5 text-slate-600">
+                                默认只导出未来未结束的 LPL 与 LCK。
+                                如果两个赛区补导日期不同，用下面的赛区日期范围分别导出。
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setPanelOpen(false)}
+                            className="rounded-full border border-slate-200 px-2 py-1 text-xs font-bold text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                        >
+                            收起
+                        </button>
+                    </div>
+
+                    <div className="mt-4 space-y-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3">
+                        <div className="text-xs font-bold text-blue-900">按赛区日期下载</div>
+
+                        <div className="space-y-2">
+                            <div className="text-[11px] font-bold text-slate-700">LPL 日期范围</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="date"
+                                    value={lplFromDate}
+                                    onChange={(event) => setLplFromDate(event.target.value)}
+                                    className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                                    aria-label="LPL 开始日期"
+                                />
+                                <input
+                                    type="date"
+                                    value={lplToDate}
+                                    onChange={(event) => setLplToDate(event.target.value)}
+                                    className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                                    aria-label="LPL 结束日期"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="text-[11px] font-bold text-slate-700">LCK 日期范围</div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="date"
+                                    value={lckFromDate}
+                                    onChange={(event) => setLckFromDate(event.target.value)}
+                                    className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                                    aria-label="LCK 开始日期"
+                                />
+                                <input
+                                    type="date"
+                                    value={lckToDate}
+                                    onChange={(event) => setLckToDate(event.target.value)}
+                                    className="rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-blue-400"
+                                    aria-label="LCK 结束日期"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="text-[11px] leading-5 text-slate-600">
+                            例子：LPL 从 2026-05-18 开始、LCK 从 2026-05-26 开始，就能分别补导两个赛区后续赛程而不重复。
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={handleRegionDateDownload}
+                            className="inline-flex w-full items-center justify-center rounded-full border border-blue-300 bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+                        >
+                            按赛区日期下载
+                        </button>
+                    </div>
+
+                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <button
+                            type="button"
+                            onClick={handleDefaultDownload}
+                            className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+                        >
+                            下载苹果日历
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCopy}
+                            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50"
+                        >
+                            复制导入链接
+                        </button>
+                    </div>
+
+                    {copyStatus ? (
+                        <div className="mt-3 text-xs font-bold text-blue-700">{copyStatus}</div>
+                    ) : null}
                 </div>
-            </div>
+            ) : null}
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <a
-<<<<<<< HEAD
-                    href={localDownloadUrl}
-=======
-                    href={IPHONE_CALENDAR_HTTP_URL}
->>>>>>> 78fcb2f (fix: stabilize iphone calendar for lpl and lck)
-                    className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
-                >
-                    下载导入苹果日历
-                </a>
-                <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
-                >
-                    复制导入链接
-                </button>
-            </div>
-
-            {copyStatus ? <div className="text-xs font-bold text-blue-700">{copyStatus}</div> : null}
+            <button
+                type="button"
+                onClick={() => setPanelOpen((value) => !value)}
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-xl transition hover:bg-blue-700"
+                aria-expanded={panelOpen}
+                aria-label="打开苹果日历导出面板"
+            >
+                <span>苹果日历</span>
+                <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">LPL + LCK</span>
+            </button>
         </div>
     );
 }

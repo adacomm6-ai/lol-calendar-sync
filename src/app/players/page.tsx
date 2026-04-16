@@ -26,14 +26,16 @@ export default async function PlayersSearchPage({
     );
   }
 
-  const allPlayers = await prisma.player.findMany({
+  const filtered = await prisma.player.findMany({
+    where: {
+      name: {
+        contains: searchText,
+      },
+    },
     include: { team: true, statSnapshots: true },
     orderBy: [{ name: 'asc' }],
-    take: 500,
   });
-
   const normalizedSearch = searchText.toLowerCase();
-  const filtered = allPlayers.filter((player) => String(player.name || '').toLowerCase().includes(normalizedSearch));
 
   const scoreExactPlayer = (candidate: any) => {
     const snapshots = candidate.statSnapshots || [];

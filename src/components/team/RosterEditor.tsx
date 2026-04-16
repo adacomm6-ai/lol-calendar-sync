@@ -1,9 +1,16 @@
 'use client';
 
-import { confirmAction } from '@/lib/confirm-dialog';
-import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { addPlayer, updatePlayer, deletePlayer } from '../../actions/team-actions';
+import { useMemo, useState, useTransition } from 'react';
+
+import { confirmAction } from '@/lib/confirm-dialog';
+
+import {
+    addPlayer,
+    bulkDeletePlayers,
+    deletePlayer,
+    updatePlayer,
+} from '../../actions/team-actions';
 
 type Player = {
     id: string;
@@ -29,7 +36,6 @@ const ROLE_LABELS: Record<string, string> = {
     COACH: '教练',
     UNKNOWN: '未知',
 };
-
 const YEARLESS_KEY = '未标注年份';
 
 function normalizeRosterRole(value: string): string {
@@ -45,7 +51,6 @@ function normalizeRosterRole(value: string): string {
 
     return role;
 }
-
 
 function extractYears(split: string): string[] {
     const explicitYears = Array.from(new Set((split.match(/20\d{2}/g) || []).map((y) => y.trim())));
@@ -67,7 +72,10 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
             role: normalizeRosterRole(player.role),
         })),
     );
+    const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
     const [isPending, startTransition] = useTransition();
+
+    const selectedIdSet = useMemo(() => new Set(selectedPlayerIds), [selectedPlayerIds]);
 
     const yearSections = useMemo(() => {
         const years = new Set<string>();
@@ -79,7 +87,7 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
                 hasYearless = true;
                 return;
             }
-            list.forEach((y) => years.add(y));
+            list.forEach((year) => years.add(year));
         });
 
         if (years.size === 0 && !hasYearless) {
@@ -88,7 +96,6 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
 
         const sortedYears = Array.from(years).sort((a, b) => Number(b) - Number(a));
         const sections = sortedYears.map((year) => ({ key: year, label: `${year} 年` }));
-
         if (hasYearless) {
             sections.push({ key: YEARLESS_KEY, label: YEARLESS_KEY });
         }
@@ -96,8 +103,8 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
         return sections;
     }, [players]);
 
-    const getPlayersForYear = (yearKey: string) => {
-        return players.filter((player) => {
+    const getPlayersForYear = (yearKey: string) =>
+        players.filter((player) => {
             const playerYears = extractYears(player.split || '');
             if (playerYears.length === 0) {
                 return yearKey === YEARLESS_KEY;
@@ -105,32 +112,95 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
             if (yearKey === YEARLESS_KEY) return false;
             return playerYears.includes(yearKey);
         });
+
+    const handleToggleEditing = () => {
+        setIsEditing((prev) => {
+            if (prev) {
+                setSelectedPlayerIds([]);
+            }
+            return !prev;
+        });
+    };
+
+    const handleTogglePlayerSelection = (playerId: string, checked: boolean) => {
+        setSelectedPlayerIds((prev) => {
+            if (checked) {
+                return prev.includes(playerId) ? prev : [...prev, playerId];
+            }
+            return prev.filter((id) => id !== playerId);
+        });
+    };
+
+    const handleSelectSectionPlayers = (playerIds: string[], checked: boolean) => {
+        const normalizedIds = Array.from(new Set(playerIds.filter(Boolean)));
+        setSelectedPlayerIds((prev) => {
+            if (checked) {
+                return Array.from(new Set([...prev, ...normalizedIds]));
+            }
+            const idSet = new Set(normalizedIds);
+            return prev.filter((id) => !idSet.has(id));
+        });
     };
 
     const handleAdd = (yearKey: string) => {
         const name = prompt('请输入选手名称:');
         if (!name) return;
 
-        const role = normalizeRosterRole(prompt('请输入位置 (TOP/JUNGLE/MID/ADC/SUPPORT/COACH):', 'TOP')?.toUpperCase() || 'TOP');
+        const inputRole = prompt('请输入位置 (TOP/JUNGLE/MID/ADC/SUPPORT/COACH):', 'TOP') || 'TOP';
+        const role = normalizeRosterRole(inputRole);
         const split = yearKey === YEARLESS_KEY ? String(new Date().getFullYear()) : yearKey;
 
         startTransition(async () => {
             const res = await addPlayer(teamId, name, role, split);
             if (!res.success) {
-                alert('添加失败: ' + res.error);
+                alert(`添加失败: ${res.error}`);
+                return;
+            }
+
+            if (res.player) {
+                setPlayers((prev) => [
+                    ...prev,
+                    {
+                        id: res.player.id,
+                        name: res.player.name,
+                        role: normalizeRosterRole(res.player.role),
+                        split: res.player.split,
+                        teamId: res.player.teamId,
+                    },
+                ]);
             }
         });
     };
 
     const handleDelete = async (id: string) => {
-        if (!(await confirmAction('确定要删除该选手吗？'))) return;
+        if (!(await confirmAction('确定要删除这名选手吗？'))) return;
 
         startTransition(async () => {
             const res = await deletePlayer(id);
             if (res.success) {
                 setPlayers((prev) => prev.filter((item) => item.id !== id));
+                setSelectedPlayerIds((prev) => prev.filter((item) => item !== id));
             } else {
-                alert('删除失败: ' + res.error);
+                alert(`删除失败: ${res.error}`);
+            }
+        });
+    };
+
+    const handleBulkDelete = async (playerIds: string[], sectionLabel?: string) => {
+        const normalizedIds = Array.from(new Set(playerIds.filter(Boolean)));
+        if (normalizedIds.length === 0) return;
+
+        const targetLabel = sectionLabel ? `“${sectionLabel}”` : '当前选择';
+        if (!(await confirmAction(`确定要批量删除${targetLabel}中的 ${normalizedIds.length} 名选手吗？`))) return;
+
+        startTransition(async () => {
+            const res = await bulkDeletePlayers(normalizedIds);
+            if (res.success) {
+                const deletedIdSet = new Set(res.deletedIds || normalizedIds);
+                setPlayers((prev) => prev.filter((item) => !deletedIdSet.has(item.id)));
+                setSelectedPlayerIds((prev) => prev.filter((id) => !deletedIdSet.has(id)));
+            } else {
+                alert(`批量删除失败: ${res.error}`);
             }
         });
     };
@@ -146,25 +216,61 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
     return (
         <div className="relative overflow-hidden rounded-sm border border-gray-200 bg-white shadow-sm">
             <div className="absolute right-2 top-2 z-10">
-                <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    className={`rounded px-3 py-1 text-xs font-bold shadow-sm transition-colors ${
-                        isEditing ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                >
-                    {isEditing ? '完成编辑' : '编辑名单'}
-                </button>
+                <div className="flex items-center gap-2">
+                    {isEditing && selectedPlayerIds.length > 0 && (
+                        <button
+                            onClick={() => handleBulkDelete(selectedPlayerIds)}
+                            className="rounded bg-red-50 px-3 py-1 text-xs font-bold text-red-600 shadow-sm transition-colors hover:bg-red-100"
+                        >
+                            批量删除 {selectedPlayerIds.length} 人
+                        </button>
+                    )}
+                    <button
+                        onClick={handleToggleEditing}
+                        className={`rounded px-3 py-1 text-xs font-bold shadow-sm transition-colors ${
+                            isEditing ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                        {isEditing ? '完成编辑' : '编辑名单'}
+                    </button>
+                </div>
             </div>
 
             <div className="divide-y divide-gray-200">
                 {yearSections.map((section) => {
                     const sectionPlayers = getPlayersForYear(section.key);
-                    const sortedPlayers = [...sectionPlayers].sort((a, b) => ROLES.indexOf(normalizeRosterRole(a.role)) - ROLES.indexOf(normalizeRosterRole(b.role)));
+                    const sortedPlayers = [...sectionPlayers].sort(
+                        (a, b) => ROLES.indexOf(normalizeRosterRole(a.role)) - ROLES.indexOf(normalizeRosterRole(b.role)),
+                    );
+                    const sectionPlayerIds = sortedPlayers.map((player) => player.id);
+                    const sectionSelectedCount = sectionPlayerIds.filter((id) => selectedIdSet.has(id)).length;
+                    const isSectionFullySelected = sectionPlayerIds.length > 0 && sectionSelectedCount === sectionPlayerIds.length;
 
                     return (
                         <div key={section.key} className="flex min-h-[180px] flex-col">
                             <div className="flex items-center justify-between border-b border-gray-200 bg-[#F7F7F9] px-4 py-3">
                                 <h2 className="text-xs font-bold uppercase tracking-wide text-gray-600">{section.label}</h2>
+                                {isEditing && sectionPlayerIds.length > 0 && (
+                                    <div className="flex items-center gap-2">
+                                        <label className="flex items-center gap-1 text-xs font-medium text-gray-500">
+                                            <input
+                                                type="checkbox"
+                                                checked={isSectionFullySelected}
+                                                onChange={(event) => handleSelectSectionPlayers(sectionPlayerIds, event.target.checked)}
+                                                className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                            />
+                                            <span>全选本组</span>
+                                        </label>
+                                        {sectionSelectedCount > 0 && (
+                                            <button
+                                                onClick={() => handleBulkDelete(sectionPlayerIds.filter((id) => selectedIdSet.has(id)), section.label)}
+                                                className="rounded bg-red-50 px-2.5 py-1 text-xs font-bold text-red-600 transition-colors hover:bg-red-100"
+                                            >
+                                                删除已选 {sectionSelectedCount} 人
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="relative flex-1 p-0">
@@ -177,21 +283,31 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
                                         <tbody>
                                             {sortedPlayers.map((player) => (
                                                 <tr key={player.id} className="group border-b border-gray-100 transition-colors last:border-0 hover:bg-gray-50">
-                                                    <td className="w-20 px-4 py-2.5">
+                                                    <td className="w-24 px-4 py-2.5">
                                                         {isEditing ? (
-                                                            <select
-                                                                value={normalizeRosterRole(player.role)}
-                                                                onChange={(event) => handleUpdate(player.id, 'role', normalizeRosterRole(event.target.value))}
-                                                                className="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs"
-                                                            >
-                                                                {ROLES.map((role) => (
-                                                                    <option key={role} value={role}>
-                                                                        {role}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
+                                                            <div className="flex items-center gap-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedIdSet.has(player.id)}
+                                                                    onChange={(event) => handleTogglePlayerSelection(player.id, event.target.checked)}
+                                                                    className="h-3.5 w-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                                />
+                                                                <select
+                                                                    value={normalizeRosterRole(player.role)}
+                                                                    onChange={(event) => handleUpdate(player.id, 'role', normalizeRosterRole(event.target.value))}
+                                                                    className="w-full rounded border border-gray-300 bg-white px-1 py-0.5 text-xs"
+                                                                >
+                                                                    {ROLES.map((role) => (
+                                                                        <option key={role} value={role}>
+                                                                            {role}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </div>
                                                         ) : (
-                                                            <span className="text-[11px] font-bold uppercase text-gray-400">{ROLE_LABELS[normalizeRosterRole(player.role)] || player.role}</span>
+                                                            <span className="text-[11px] font-bold uppercase text-gray-400">
+                                                                {ROLE_LABELS[normalizeRosterRole(player.role)] || player.role}
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="relative px-4 py-2.5 text-left">
@@ -213,7 +329,10 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <Link href={`/players?search=${encodeURIComponent(player.name)}`} className="text-sm font-semibold text-[#202D37] hover:text-blue-600 hover:underline">
+                                                            <Link
+                                                                href={`/players?search=${encodeURIComponent(player.name)}`}
+                                                                className="text-sm font-semibold text-[#202D37] hover:text-blue-600 hover:underline"
+                                                            >
                                                                 {player.name}
                                                             </Link>
                                                         )}
@@ -248,5 +367,3 @@ export default function RosterEditor({ teamId, initialPlayers }: RosterEditorPro
         </div>
     );
 }
-
-

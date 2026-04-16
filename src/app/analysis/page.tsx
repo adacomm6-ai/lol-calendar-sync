@@ -7,6 +7,7 @@ import { buildEventMetaRowsFromMatches, buildEventMetaRowsFromSnapshots } from '
 import { ALL_EVENT_OPTION, buildConfiguredEventBundles } from '@/lib/event-option-mapping';
 import { getRankModulePageData } from '@/lib/player-rank';
 import { normalizeLeague, normalizeLeagueBucket, normalizeRole, parseJsonArray } from '@/lib/player-snapshot';
+import { getTeamAliasCandidates, normalizeTeamLookupKey } from '@/lib/team-alias';
 import AnalysisViewTabs from '@/components/analysis/AnalysisViewTabs';
 import RankModulePage from '@/components/analysis/RankModulePage';
 import PlayerPhoto from '@/components/player/PlayerPhoto';
@@ -222,6 +223,12 @@ function pickBestRow(rows: any[]) {
     .sort((left, right) => {
       const diff = scoreSnapshotCompleteness(right) - scoreSnapshotCompleteness(left);
       if (diff !== 0) return diff;
+      const rightHasPhoto = right?.player?.photo ? 1 : 0;
+      const leftHasPhoto = left?.player?.photo ? 1 : 0;
+      if (rightHasPhoto !== leftHasPhoto) return rightHasPhoto - leftHasPhoto;
+      const rightHasPlayerId = right?.playerId ? 1 : 0;
+      const leftHasPlayerId = left?.playerId ? 1 : 0;
+      if (rightHasPlayerId !== leftHasPlayerId) return rightHasPlayerId - leftHasPlayerId;
       const rightMs = new Date(right.updatedAt || 0).getTime();
       const leftMs = new Date(left.updatedAt || 0).getTime();
       return rightMs - leftMs;
@@ -334,9 +341,15 @@ function mergeRowsForSource(rows: any[], unifiedTournamentName: string) {
 }
 
 function dedupeRows(rows: any[], unifiedTournamentName: string) {
+  const shouldMergeAcrossTournaments = unifiedTournamentName !== ALL_EVENT_OPTION;
   const grouped = new Map<string, any[]>();
   for (const row of rows) {
-    const key = [row.seasonYear, row.playerId || row.normalizedPlayerName || row.playerName, row.teamName, row.role].join('::');
+    const key = [
+      row.seasonYear,
+      resolveSnapshotPlayerKey(row),
+      resolveSnapshotTeamKey(row),
+      normalizeRole(row.role),
+    ].join('::');
     const list = grouped.get(key) || [];
     list.push(row);
     grouped.set(key, list);
@@ -353,7 +366,7 @@ function dedupeRows(rows: any[], unifiedTournamentName: string) {
     }
 
     const sourceCandidates = Array.from(bySource.entries()).map(([source, sourceRows]) => {
-      const merged = mergeRowsForSource(sourceRows, unifiedTournamentName);
+      const merged = shouldMergeAcrossTournaments ? mergeRowsForSource(sourceRows, unifiedTournamentName) : pickBestRow(sourceRows);
       const score = toNumber(merged.games) * 100 + scoreSnapshotCompleteness(merged) * 10 + sourcePriority(source) * 5;
       return { merged, score };
     });
@@ -365,11 +378,56 @@ function dedupeRows(rows: any[], unifiedTournamentName: string) {
         const leftMs = new Date(left.merged.updatedAt || 0).getTime();
         return rightMs - leftMs;
       });
-      result.push(sourceCandidates[0].merged);
+      result.push(enrichRowWithPreferredIdentity(sourceCandidates[0].merged, groupRows));
     }
   }
 
   return result;
+}
+
+function buildTeamAliasKeys(...values: Array<unknown>) {
+  return Array.from(
+    new Set(
+      values
+        .flatMap((value) => getTeamAliasCandidates(String(value || '').trim()))
+        .map((value) => normalizeTeamLookupKey(value))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function resolveSnapshotPlayerKey(row: any) {
+  return String(row.normalizedPlayerName || row.playerName || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+}
+
+function resolveSnapshotTeamKey(row: any) {
+  const aliasKeys = buildTeamAliasKeys(row.teamName, row.teamShortName, row.mappedTeamName);
+  if (aliasKeys.length > 0) return aliasKeys.slice().sort()[0];
+  return normalizeTeamLookupKey(String(row.teamName || row.teamShortName || row.mappedTeamName || '').trim());
+}
+
+function enrichRowWithPreferredIdentity(row: any, rows: any[]) {
+  const preferredWithPhoto = pickBestRow(rows.filter((item) => item?.player?.photo));
+  const preferredWithPlayerId = pickBestRow(rows.filter((item) => item?.playerId));
+  return {
+    ...row,
+    playerId: row.playerId || preferredWithPlayerId?.playerId || null,
+    player: row.player?.photo ? row.player : preferredWithPhoto?.player || row.player,
+    teamShortName: row.teamShortName || preferredWithPlayerId?.teamShortName || preferredWithPhoto?.teamShortName || row.teamShortName,
+    mappedTeamName: row.mappedTeamName || preferredWithPlayerId?.mappedTeamName || preferredWithPhoto?.mappedTeamName || row.mappedTeamName,
+  };
+}
+
+function resolveMatchRegionBucket(row: {
+  tournament?: string | null;
+  teamA?: { region?: string | null } | null;
+  teamB?: { region?: string | null } | null;
+}) {
+  const primaryRegion = String(row.teamA?.region || row.teamB?.region || '').trim();
+  return normalizeLeagueBucket(primaryRegion || row.tournament || '', row.tournament || '');
 }
 
 function normalizeTournamentKey(value: string) {
@@ -415,6 +473,17 @@ function normalizeTournamentKey(value: string) {
     .filter((token) => !stopwords.has(token))
     .sort()
     .join(' ');
+}
+
+function buildTournamentSelectionKeys(
+  display: string,
+  aliasGroup: { selectionAliases: string[]; matchAliases: string[] } | null | undefined,
+) {
+  return new Set(
+    [display, ...(aliasGroup?.selectionAliases || []), ...(aliasGroup?.matchAliases || [])]
+      .map((value) => normalizeTournamentKey(String(value || '')))
+      .filter(Boolean),
+  );
 }
 
 function scoreTournamentLabel(value: string) {
@@ -713,8 +782,8 @@ export default async function PlayerDataPage({
       select: {
         tournament: true,
         startTime: true,
-        teamA: { select: { region: true } },
-        teamB: { select: { region: true } },
+        teamA: { select: { region: true, name: true, shortName: true } },
+        teamB: { select: { region: true, name: true, shortName: true } },
       },
       where: {
         tournament: { not: '' },
@@ -770,11 +839,14 @@ export default async function PlayerDataPage({
   );
   const tournamentOptions = [ALL_EVENT_OPTION, ...Array.from(tournamentAliasMap.keys())];
   const requestedTournament = String(tournament || '').trim();
-  const selectedTournament = resolveTournamentSelection(requestedTournament, tournamentAliasMap) || ALL_EVENT_OPTION;
-  const selectedTournamentAliases =
-    selectedTournament === ALL_EVENT_OPTION
-      ? null
-      : tournamentAliasMap.get(selectedTournament)?.matchAliases || [];
+  const preferredTournament = tournamentOptions.find((item) => item !== ALL_EVENT_OPTION) || ALL_EVENT_OPTION;
+  const initialSelectedTournament =
+    requestedTournament === ALL_EVENT_OPTION
+      ? ALL_EVENT_OPTION
+      : resolveTournamentSelection(requestedTournament, tournamentAliasMap) || preferredTournament;
+  let selectedTournament = initialSelectedTournament;
+  let selectedTournamentBundle =
+    selectedTournament === ALL_EVENT_OPTION ? null : tournamentAliasMap.get(selectedTournament) || null;
 
   const yearsByRegion = Object.fromEntries(Array.from(yearsByRegionMap.entries()));
   const tournamentsByRegionYear: Record<string, string[]> = {};
@@ -814,20 +886,66 @@ export default async function PlayerDataPage({
     },
     where: {
       seasonYear: selectedYear,
-      ...(selectedTournamentAliases === null
-        ? {}
-        : selectedTournamentAliases.length > 0
-          ? { tournamentName: { in: selectedTournamentAliases } }
-          : { tournamentName: '__NO_MATCH__' }),
       ...(selectedRole !== 'ALL' ? { role: selectedRole } : {}),
     },
     orderBy: [{ syncedAt: 'desc' }, { updatedAt: 'desc' }, { games: 'desc' }],
   });
 
-  const baseRows = dedupeRows(
-    candidateRows.filter((row) => resolveTournamentRowBucket(row) === selectedRegion),
-    selectedTournament,
-  );
+  const scopedCandidateRows = candidateRows.filter((row) => resolveTournamentRowBucket(row) === selectedRegion);
+  const filterRowsByTournament = (
+    rows: typeof scopedCandidateRows,
+    tournamentLabel: string,
+    aliasGroup: { selectionAliases: string[]; matchAliases: string[] } | null,
+  ) => {
+    if (tournamentLabel === ALL_EVENT_OPTION) return rows;
+    const selectionKeys = buildTournamentSelectionKeys(tournamentLabel, aliasGroup);
+    if (selectionKeys.size === 0) return [];
+    return rows.filter((row) => selectionKeys.has(normalizeTournamentKey(String(row.tournamentName || ''))));
+  };
+
+  let tournamentScopedRows = filterRowsByTournament(scopedCandidateRows, selectedTournament, selectedTournamentBundle);
+  if (selectedTournament !== ALL_EVENT_OPTION && tournamentScopedRows.length === 0) {
+    for (const option of tournamentOptions) {
+      if (option === ALL_EVENT_OPTION) continue;
+      const bundle = tournamentAliasMap.get(option) || null;
+      const optionRows = filterRowsByTournament(scopedCandidateRows, option, bundle);
+      if (optionRows.length === 0) continue;
+      selectedTournament = option;
+      selectedTournamentBundle = bundle;
+      tournamentScopedRows = optionRows;
+      break;
+    }
+  }
+  if (tournamentScopedRows.length === 0) {
+    selectedTournament = ALL_EVENT_OPTION;
+    selectedTournamentBundle = null;
+    tournamentScopedRows = scopedCandidateRows;
+  }
+
+  const officialTeamAliasKeys = new Set<string>();
+  const selectedTournamentMatchAliases = selectedTournamentBundle?.matchAliases || [];
+  if (selectedTournamentMatchAliases.length > 0) {
+    for (const row of matchMeta) {
+      if (resolveMatchRegionBucket(row) !== selectedRegion) continue;
+      if (!selectedTournamentMatchAliases.includes(String(row.tournament || '').trim())) continue;
+      buildTeamAliasKeys(row.teamA?.name, row.teamA?.shortName, row.teamB?.name, row.teamB?.shortName).forEach((key) =>
+        officialTeamAliasKeys.add(key),
+      );
+    }
+  }
+
+  const strictFilteredCandidateRows =
+    officialTeamAliasKeys.size === 0
+      ? tournamentScopedRows
+      : tournamentScopedRows.filter((row) =>
+          buildTeamAliasKeys(row.teamName, row.teamShortName, row.mappedTeamName).some((key) => officialTeamAliasKeys.has(key)),
+        );
+  const filteredCandidateRows =
+    officialTeamAliasKeys.size > 0 && strictFilteredCandidateRows.length === 0
+      ? tournamentScopedRows
+      : strictFilteredCandidateRows;
+
+  const baseRows = dedupeRows(filteredCandidateRows, selectedTournament);
 
   const rows = baseRows
     .filter((row) => {

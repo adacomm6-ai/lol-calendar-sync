@@ -1,3 +1,5 @@
+import { buildRankDiscoveryNameVariants } from '@/lib/rank-discovery-name-variants';
+
 const OPGG_PRO_GAMER_URL = 'https://op.gg/lol/spectate/list/pro-gamer?region=kr';
 const OPGG_CACHE_TTL_MS = 60 * 60 * 1000;
 const OPGG_FETCH_TIMEOUT_MS = 8000;
@@ -19,30 +21,6 @@ const OPGG_PLATFORM_MAP: Record<string, { platform: string; regionGroup: string 
   TH: { platform: 'TH2', regionGroup: 'SEA' },
   TW: { platform: 'TW2', regionGroup: 'SEA' },
   VN: { platform: 'VN2', regionGroup: 'SEA' },
-};
-
-const DISCOVERY_ALIAS_MAP: Record<string, string[]> = {
-  bdd: ['Bdd'],
-  care: ['Care'],
-  clozer: ['Clozer'],
-  deokdam: ['Deokdam'],
-  gideon: ['Gideon'],
-  karis: ['Karis'],
-  knight: ['Knight'],
-  monki: ['Monki'],
-  vicla: ['VicLa'],
-  xiaohu: ['Xiaohu'],
-  xun: ['Xun'],
-  jiejie: ['Jiejie'],
-  junjia: ['JunJia'],
-  missing: ['MISSING'],
-  on: ['ON'],
-  teddy: ['Teddy'],
-  zdz: ['ZDZ'],
-  zhuo: ['Zhuo'],
-  ycx: ['YCX'],
-  jwei: ['JWEI'],
-  dudu: ['DuDu'],
 };
 
 export type DiscoveredOpggRankAccount = {
@@ -87,21 +65,10 @@ function stripHtml(value: string) {
 }
 
 function buildDiscoveryNameCandidates(playerName: string) {
-  const trimmed = String(playerName || '').trim();
-  const compact = trimmed.replace(/\s+/g, '');
-  const normalizedKey = compact.toLowerCase();
-  const titleCase = compact ? compact.charAt(0).toUpperCase() + compact.slice(1).toLowerCase() : '';
-  const aliasCandidates = DISCOVERY_ALIAS_MAP[normalizedKey] || [];
-  const strippedPrefixCandidates = [] as string[];
-  const prefixedTitleCase = compact.match(/^([A-Z]{2,5})([A-Z][A-Za-z0-9]{1,24})$/);
-  if (prefixedTitleCase?.[2]) {
-    strippedPrefixCandidates.push(prefixedTitleCase[2]);
-  }
-  const prefixedUpper = compact.match(/^([A-Z]{2,5})([A-Z0-9]{2,24})$/);
-  if (prefixedUpper?.[2] && prefixedUpper[2] !== compact) {
-    strippedPrefixCandidates.push(prefixedUpper[2]);
-  }
-  return Array.from(new Set([trimmed, compact, titleCase, ...strippedPrefixCandidates, ...aliasCandidates].filter(Boolean)));
+  return buildRankDiscoveryNameVariants(playerName, [], {
+    includeSearchAliases: false,
+    includeDeepSearchAliases: false,
+  });
 }
 
 function normalizePlatform(platformLabel: string) {
@@ -196,15 +163,28 @@ async function fetchOpggLines() {
 }
 
 function buildSearchPatterns(playerName: string) {
-  return buildDiscoveryNameCandidates(playerName).map((candidate) => candidate.toLowerCase());
+  return Array.from(
+    new Set(
+      buildDiscoveryNameCandidates(playerName).flatMap((candidate) => {
+        const normalized = candidate.toLowerCase().replace(/[\s\-_.\/\\]+/g, '');
+        return [candidate.toLowerCase(), normalized].filter(Boolean);
+      }),
+    ),
+  );
 }
 
 export async function discoverProRankAccountsFromOpgg(playerName: string) {
   const lines = await fetchOpggLines();
   const patterns = buildSearchPatterns(playerName);
   const matchedIndexes = lines
-    .map((line, index) => ({ line: line.toLowerCase(), index }))
-    .filter(({ line }) => patterns.some((pattern) => pattern && line.includes(pattern)))
+    .map((line, index) => ({
+      line: line.toLowerCase(),
+      normalizedLine: line.toLowerCase().replace(/[\s\-_.\/\\]+/g, ''),
+      index,
+    }))
+    .filter(({ line, normalizedLine }) =>
+      patterns.some((pattern) => pattern && (line.includes(pattern) || normalizedLine.includes(pattern))),
+    )
     .map(({ index }) => index);
 
   const accounts: DiscoveredOpggRankAccount[] = [];

@@ -1,4 +1,5 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
+
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import ConfirmDialogProvider from '@/components/ui/ConfirmDialogProvider';
@@ -8,10 +9,18 @@ export const metadata: Metadata = {
   title: 'LOL HP',
   description: 'LPL & LCK Match Data Collection System',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/brand/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/brand/brand-mark.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: ['/brand/favicon-32x32.png'],
+    apple: [{ url: '/brand/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
 };
 
 export const viewport = {
-  themeColor: '#ffffff',
+  themeColor: '#100b08',
 };
 
 export default function RootLayout({

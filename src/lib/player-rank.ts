@@ -6,6 +6,7 @@ import { buildEventMetaRowsFromMatches, buildEventMetaRowsFromSnapshots } from '
 import { ALL_EVENT_OPTION, buildConfiguredEventBundles } from '@/lib/event-option-mapping';
 import { normalizeLeagueBucket, normalizeRole } from '@/lib/player-snapshot';
 import { getCurrentSeasonRankEffectiveScope } from '@/lib/rank-effective-pool';
+import { getTeamAliasCandidates } from '@/lib/team-alias';
 
 export type RankModuleSortKey =
   | 'activityScore'
@@ -675,9 +676,28 @@ function buildRankIdentityKey(input: {
   role?: string | null;
 }) {
   const regionKey = normalizeRankIdentityText(input.region || '');
+  const normalizedPlayerName = normalizeRankIdentityText(input.playerName || '');
+  const teamPrefixCandidates = Array.from(
+    new Set(
+      [...getTeamAliasCandidates(input.teamShortName), ...getTeamAliasCandidates(input.teamName)]
+        .map((value) => normalizeRankIdentityText(value || ''))
+        .filter(Boolean),
+    ),
+  );
+
+  let strippedPlayerName = normalizedPlayerName;
+  for (const prefix of teamPrefixCandidates) {
+    if (!prefix) continue;
+    if (strippedPlayerName.length <= prefix.length + 1) continue;
+    if (strippedPlayerName.startsWith(prefix)) {
+      strippedPlayerName = strippedPlayerName.slice(prefix.length);
+      break;
+    }
+  }
+
   return [
     regionKey,
-    normalizeRankIdentityText(input.playerName || ''),
+    strippedPlayerName || normalizedPlayerName,
     normalizeRankRoleKey(String(input.role || '')),
     regionKey ? '' : normalizeRankIdentityText(input.teamShortName || input.teamName || ''),
   ].join('::');

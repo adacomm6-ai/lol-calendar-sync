@@ -1,4 +1,6 @@
-const TRACKING_THE_PROS_BASE_URL = 'https://www.trackingthepros.com';
+import { buildRankDiscoveryNameVariants } from '@/lib/rank-discovery-name-variants';
+
+const TRACKING_THE_PROS_BASE_URLS = ['https://new.trackingthepros.com', 'https://www.trackingthepros.com'] as const;
 const TRACKING_THE_PROS_FETCH_TIMEOUT_MS = 10000;
 
 const TRACKING_PLATFORM_MAP: Record<string, { platform: string; regionGroup: string }> = {
@@ -20,31 +22,8 @@ const TRACKING_PLATFORM_MAP: Record<string, { platform: string; regionGroup: str
   VN: { platform: 'VN2', regionGroup: 'SEA' },
 };
 
-const TRACKING_ACCOUNT_PATTERN = /\[(KR|EUW|EUNE|NA|BR|LAN|LAS|JP|OCE|TR|RU|PH|SG|TH|TW|VN)\]\s+(.+?)#([^\s|#]+)\s+\|/giu;
-
-const DISCOVERY_ALIAS_MAP: Record<string, string[]> = {
-  bdd: ['Bdd'],
-  care: ['Care'],
-  clozer: ['Clozer'],
-  deokdam: ['Deokdam'],
-  gideon: ['Gideon'],
-  karis: ['Karis'],
-  knight: ['Knight'],
-  missing: ['MISSING'],
-  monki: ['Monki'],
-  on: ['ON'],
-  teddy: ['Teddy'],
-  vicla: ['VicLa'],
-  xiaohu: ['Xiaohu'],
-  xun: ['Xun'],
-  ycx: ['YCX'],
-  jiejie: ['Jiejie'],
-  junjia: ['JunJia'],
-  jwei: ['JWEI'],
-  zdz: ['ZDZ'],
-  zhuo: ['Zhuo'],
-  dudu: ['DuDu'],
-};
+const TRACKING_ACCOUNT_PATTERN =
+  /\[(KR|EUW|EUNE|NA|BR|LAN|LAS|JP|OCE|TR|RU|PH|SG|TH|TW|VN)\]\s+(.+?)#([^\s|#]+)\s+\|/giu;
 
 export type DiscoveredTrackingTheProsRankAccount = {
   sourceUrl: string;
@@ -81,28 +60,10 @@ function stripHtml(value: string) {
 }
 
 function normalizePlayerPageCandidates(playerName: string) {
-  const trimmed = String(playerName || '').trim();
-  const compact = trimmed.replace(/\s+/g, '');
-  const normalizedKey = compact.toLowerCase();
-  const titleCase = compact ? compact.charAt(0).toUpperCase() + compact.slice(1).toLowerCase() : '';
-  const aliasCandidates = DISCOVERY_ALIAS_MAP[normalizedKey] || [];
-  const strippedPrefixCandidates = [] as string[];
-  const prefixedTitleCase = compact.match(/^([A-Z]{2,5})([A-Z][A-Za-z0-9]{1,24})$/);
-  if (prefixedTitleCase?.[2]) {
-    strippedPrefixCandidates.push(prefixedTitleCase[2]);
-  }
-  const prefixedUpper = compact.match(/^([A-Z]{2,5})([A-Z0-9]{2,24})$/);
-  if (prefixedUpper?.[2] && prefixedUpper[2] !== compact) {
-    strippedPrefixCandidates.push(prefixedUpper[2]);
-  }
-
-  return Array.from(
-    new Set(
-      [trimmed, compact, trimmed.toLowerCase(), trimmed.toUpperCase(), titleCase, ...strippedPrefixCandidates, ...aliasCandidates].filter(
-        Boolean,
-      ),
-    ),
-  );
+  return buildRankDiscoveryNameVariants(playerName, [], {
+    includeSearchAliases: false,
+    includeDeepSearchAliases: false,
+  });
 }
 
 function normalizeSection(text: string) {
@@ -120,7 +81,10 @@ function normalizeSection(text: string) {
 }
 
 function mapPlatform(platformLabel: string) {
-  return TRACKING_PLATFORM_MAP[platformLabel.toUpperCase()] || { platform: platformLabel.toUpperCase(), regionGroup: 'ASIA' };
+  return TRACKING_PLATFORM_MAP[platformLabel.toUpperCase()] || {
+    platform: platformLabel.toUpperCase(),
+    regionGroup: 'ASIA',
+  };
 }
 
 function isLikelyPlaceholderAccount(gameName: string) {
@@ -163,22 +127,25 @@ function parseAccounts(sectionText: string, sourceUrl: string) {
 }
 
 async function fetchTrackingTheProsHtml(playerName: string) {
-  for (const candidate of normalizePlayerPageCandidates(playerName)) {
-    const url = `${TRACKING_THE_PROS_BASE_URL}/player/${encodeURIComponent(candidate)}`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
-      },
-      signal: AbortSignal.timeout(TRACKING_THE_PROS_FETCH_TIMEOUT_MS),
-      cache: 'no-store',
-    }).catch(() => null);
+  for (const baseUrl of TRACKING_THE_PROS_BASE_URLS) {
+    for (const candidate of normalizePlayerPageCandidates(playerName)) {
+      const url = `${baseUrl}/player/${encodeURIComponent(candidate)}`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+        },
+        signal: AbortSignal.timeout(TRACKING_THE_PROS_FETCH_TIMEOUT_MS),
+        cache: 'no-store',
+      }).catch(() => null);
 
-    if (!response || !response.ok) continue;
+      if (!response || !response.ok) continue;
 
-    const html = await response.text();
-    if (!html || !html.includes('Accounts')) continue;
+      const html = await response.text();
+      if (!html || !html.includes('Accounts')) continue;
 
-    return { html, url };
+      return { html, url };
+    }
   }
 
   return null;
@@ -186,11 +153,14 @@ async function fetchTrackingTheProsHtml(playerName: string) {
 
 async function fetchTrackingTheProsHtmlByUrl(sourceUrl: string) {
   const normalizedUrl = String(sourceUrl || '').trim();
-  if (!normalizedUrl || !normalizedUrl.startsWith(TRACKING_THE_PROS_BASE_URL)) return null;
+  if (!normalizedUrl || !TRACKING_THE_PROS_BASE_URLS.some((baseUrl) => normalizedUrl.startsWith(baseUrl))) {
+    return null;
+  }
 
   const response = await fetch(normalizedUrl, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
     },
     signal: AbortSignal.timeout(TRACKING_THE_PROS_FETCH_TIMEOUT_MS),
     cache: 'no-store',

@@ -1,11 +1,11 @@
 {
-    "name": "LPL Data System",
-    "short_name": "LPL Data",
-    "description": "Professional League of Legends Data Center",
+    "name": "LOL HP",
+    "short_name": "LOL HP",
+    "description": "League of Legends match intelligence and data control center",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#ffffff",
+    "background_color": "#100b08",
+    "theme_color": "#100b08",
     "icons": [
         {
             "src": "/icons/icon-192x192.png",

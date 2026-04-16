@@ -11,9 +11,28 @@ import {
   normalizeText,
   PlayerSnapshotUpsertPayload,
 } from '@/lib/player-snapshot';
+import { normalizeTeamFamilyKey, normalizeTeamIdentityKey, normalizeTeamLookupKey } from '@/lib/team-alias';
 
 const EXPECTED_TOKEN = String(process.env.PLAYER_SYNC_TOKEN || process.env.BP_SYNC_TOKEN || '').trim();
 const CORE_LEAGUE_BUCKET = new Set(['LPL', 'LCK', 'WORLDS']);
+
+function isSampleTournamentLike(value: unknown) {
+  return normalizeText(value).includes('本地样本');
+}
+
+function isPlaceholderPlayerName(value: unknown) {
+  const raw = normalizeText(value);
+  if (!raw) return true;
+  if (/^[A-Za-z]\d{1,2}$/.test(raw)) return true;
+  if (raw.includes('候选')) return true;
+  return false;
+}
+
+function isSuspiciousUnknownSnapshotLike(splitName: unknown, sourceKey: unknown) {
+  const split = normalizeText(splitName).toLowerCase();
+  const source = normalizeText(sourceKey).toLowerCase();
+  return split.includes('unknown') || source.includes('unknown');
+}
 
 function getProvidedToken(request: Request): string {
   const authHeader = String(request.headers.get('authorization') || '').trim();
@@ -214,6 +233,123 @@ async function ensureTeam(payload: PlayerSnapshotUpsertPayload) {
   });
 }
 
+type PlayerRegistryEntry = {
+  id: string;
+  name: string;
+  normalizedName: string;
+  role: string;
+  canonicalRole: string;
+  split: string;
+  photo: string | null;
+  teamId: string;
+  teamName: string;
+  teamShortName: string | null;
+  canonicalTeamKey: string;
+  snapshotRefs: number;
+  refScore: number;
+  updatedAt: Date;
+};
+
+type PlayerRegistry = {
+  exactByComposite: Map<string, PlayerRegistryEntry>;
+  byNormalizedRole: Map<string, PlayerRegistryEntry[]>;
+  byId: Map<string, PlayerRegistryEntry>;
+};
+
+function buildPlayerCompositeKey(name: string, teamId: string) {
+  return `${normalizeText(name)}::${teamId}`;
+}
+
+function buildPlayerNormalizedRoleKey(name: string, role: string) {
+  return `${normalizeNameKey(name)}::${normalizeRole(role)}`;
+}
+
+function buildPlayerCanonicalTeamKey(teamName?: string | null, teamShortName?: string | null) {
+  return normalizeTeamIdentityKey(teamName, teamShortName);
+}
+
+function scorePlayerCandidate(entry: PlayerRegistryEntry) {
+  return entry.refScore * 100 + (entry.photo ? 10 : 0) + new Date(entry.updatedAt || 0).getTime() / 1000000000;
+}
+
+function chooseBestRegistryEntry(entries: PlayerRegistryEntry[]) {
+  return entries
+    .slice()
+    .sort((left, right) => {
+      const scoreDiff = scorePlayerCandidate(right) - scorePlayerCandidate(left);
+      if (scoreDiff !== 0) return scoreDiff;
+      return String(left.id).localeCompare(String(right.id));
+    })[0];
+}
+
+function addRegistryEntry(registry: PlayerRegistry, entry: PlayerRegistryEntry) {
+  registry.byId.set(entry.id, entry);
+  registry.exactByComposite.set(buildPlayerCompositeKey(entry.name, entry.teamId), entry);
+  const roleKey = buildPlayerNormalizedRoleKey(entry.name, entry.role);
+  const list = registry.byNormalizedRole.get(roleKey) || [];
+  list.push(entry);
+  registry.byNormalizedRole.set(roleKey, list);
+}
+
+function removeRegistryEntry(registry: PlayerRegistry, entry: PlayerRegistryEntry) {
+  registry.byId.delete(entry.id);
+  registry.exactByComposite.delete(buildPlayerCompositeKey(entry.name, entry.teamId));
+  const roleKey = buildPlayerNormalizedRoleKey(entry.name, entry.role);
+  const list = (registry.byNormalizedRole.get(roleKey) || []).filter((item) => item.id !== entry.id);
+  if (list.length === 0) registry.byNormalizedRole.delete(roleKey);
+  else registry.byNormalizedRole.set(roleKey, list);
+}
+
+async function loadPlayerRegistry(): Promise<PlayerRegistry> {
+  const rows = await prisma.player.findMany({
+    include: {
+      team: true,
+      rankProfileCache: { select: { id: true } },
+      _count: {
+        select: {
+          statSnapshots: true,
+          rankAccounts: true,
+          rankSnapshots: true,
+          rankRecentSummaries: true,
+        },
+      },
+    },
+  });
+
+  const registry: PlayerRegistry = {
+    exactByComposite: new Map(),
+    byNormalizedRole: new Map(),
+    byId: new Map(),
+  };
+
+  rows.forEach((player) => {
+    const entry: PlayerRegistryEntry = {
+      id: player.id,
+      name: normalizeText(player.name),
+      normalizedName: normalizeNameKey(player.name),
+      role: normalizeRole(player.role),
+      canonicalRole: normalizeRole(player.role),
+      split: normalizeText(player.split),
+      photo: normalizeText(player.photo) || null,
+      teamId: player.teamId,
+      teamName: normalizeText(player.team?.name),
+      teamShortName: normalizeText(player.team?.shortName) || null,
+      canonicalTeamKey: buildPlayerCanonicalTeamKey(player.team?.name, player.team?.shortName),
+      snapshotRefs: player._count.statSnapshots,
+      refScore:
+        player._count.statSnapshots +
+        player._count.rankAccounts +
+        player._count.rankSnapshots +
+        player._count.rankRecentSummaries +
+        (player.rankProfileCache ? 1 : 0),
+      updatedAt: player.updatedAt,
+    };
+    addRegistryEntry(registry, entry);
+  });
+
+  return registry;
+}
+
 function mergeSplitValue(current: string | null | undefined, nextValues: string[]) {
   const bucket = new Set(
     String(current || '')
@@ -225,7 +361,7 @@ function mergeSplitValue(current: string | null | undefined, nextValues: string[
   return Array.from(bucket).join(', ');
 }
 
-async function ensurePlayer(payload: PlayerSnapshotUpsertPayload, teamId: string) {
+async function ensurePlayer(payload: PlayerSnapshotUpsertPayload, team: { id: string; name: string; shortName?: string | null }, registry: PlayerRegistry) {
   const playerName = normalizeText(payload.playerName);
   if (!playerName) {
     throw new Error('playerName is required');
@@ -233,37 +369,155 @@ async function ensurePlayer(payload: PlayerSnapshotUpsertPayload, teamId: string
 
   const role = normalizeRole(payload.role);
   const split = mergeSplitValue('', [inferSplitName(payload), normalizeText(payload.tournamentName)]);
-
-  const existing = await prisma.player.findUnique({
-    where: {
-      name_teamId: {
-        name: playerName,
-        teamId,
-      },
-    },
-  });
+  const compositeKey = buildPlayerCompositeKey(playerName, team.id);
+  const existing = registry.exactByComposite.get(compositeKey) || null;
 
   if (existing) {
     const nextSplit = mergeSplitValue(existing.split, [inferSplitName(payload), normalizeText(payload.tournamentName)]);
     const shouldUpdate = existing.role !== role || existing.split !== nextSplit;
-    if (!shouldUpdate) return existing;
-    return prisma.player.update({
+    if (!shouldUpdate) {
+      return prisma.player.findUniqueOrThrow({ where: { id: existing.id } });
+    }
+
+    const updated = await prisma.player.update({
       where: { id: existing.id },
       data: {
         role,
         split: nextSplit,
       },
     });
+    removeRegistryEntry(registry, existing);
+    addRegistryEntry(registry, {
+      ...existing,
+      role,
+      canonicalRole: role,
+      split: nextSplit,
+      updatedAt: updated.updatedAt,
+      snapshotRefs: existing.snapshotRefs,
+    });
+    return updated;
   }
 
-  return prisma.player.create({
+  const normalizedRoleKey = buildPlayerNormalizedRoleKey(playerName, role);
+  const candidates = registry.byNormalizedRole.get(normalizedRoleKey) || [];
+  const targetCanonicalTeamKey = buildPlayerCanonicalTeamKey(team.name, team.shortName || null);
+  const targetFamilyTeamKey = normalizeTeamFamilyKey(team.name, team.shortName || null);
+  const sameTeamCandidates = candidates.filter((candidate) => candidate.canonicalTeamKey === targetCanonicalTeamKey);
+
+  if (sameTeamCandidates.length > 0) {
+    const keeper = chooseBestRegistryEntry(sameTeamCandidates);
+    const nextSplit = mergeSplitValue(keeper.split, [inferSplitName(payload), normalizeText(payload.tournamentName)]);
+    const updated = await prisma.player.update({
+      where: { id: keeper.id },
+      data: {
+        teamId: team.id,
+        role,
+        split: nextSplit,
+      },
+    });
+    removeRegistryEntry(registry, keeper);
+    addRegistryEntry(registry, {
+      ...keeper,
+      role,
+      canonicalRole: role,
+      split: nextSplit,
+      teamId: team.id,
+      teamName: team.name,
+      teamShortName: team.shortName || null,
+      canonicalTeamKey: targetCanonicalTeamKey,
+      updatedAt: updated.updatedAt,
+      snapshotRefs: keeper.snapshotRefs,
+    });
+    return updated;
+  }
+
+  const sameFamilyCandidates = candidates.filter((candidate) =>
+    normalizeTeamFamilyKey(candidate.teamName, candidate.teamShortName || null) === targetFamilyTeamKey,
+  );
+
+  if (sameFamilyCandidates.length > 0) {
+    const keeper = chooseBestRegistryEntry(sameFamilyCandidates);
+    const nextSplit = mergeSplitValue(keeper.split, [inferSplitName(payload), normalizeText(payload.tournamentName)]);
+    const updated = await prisma.player.update({
+      where: { id: keeper.id },
+      data: {
+        teamId: team.id,
+        role,
+        split: nextSplit,
+      },
+    });
+    removeRegistryEntry(registry, keeper);
+    addRegistryEntry(registry, {
+      ...keeper,
+      role,
+      canonicalRole: role,
+      split: nextSplit,
+      teamId: team.id,
+      teamName: team.name,
+      teamShortName: team.shortName || null,
+      canonicalTeamKey: targetCanonicalTeamKey,
+      updatedAt: updated.updatedAt,
+      snapshotRefs: keeper.snapshotRefs,
+    });
+    return updated;
+  }
+
+  // Avoid cross-org auto-merges unless the existing row is only a weak shadow record.
+  const shadowCandidates = candidates.filter((candidate) =>
+    candidate.snapshotRefs === 0 && candidate.refScore <= 3,
+  );
+  if (candidates.length === 1 && shadowCandidates.length === 1) {
+    const keeper = shadowCandidates[0];
+    const nextSplit = mergeSplitValue(keeper.split, [inferSplitName(payload), normalizeText(payload.tournamentName)]);
+    const updated = await prisma.player.update({
+      where: { id: keeper.id },
+      data: {
+        teamId: team.id,
+        role,
+        split: nextSplit,
+      },
+    });
+    removeRegistryEntry(registry, keeper);
+    addRegistryEntry(registry, {
+      ...keeper,
+      role,
+      canonicalRole: role,
+      split: nextSplit,
+      teamId: team.id,
+      teamName: team.name,
+      teamShortName: team.shortName || null,
+      canonicalTeamKey: targetCanonicalTeamKey,
+      updatedAt: updated.updatedAt,
+      snapshotRefs: keeper.snapshotRefs,
+    });
+    return updated;
+  }
+
+  const created = await prisma.player.create({
     data: {
       name: playerName,
       role,
       split,
-      teamId,
+      teamId: team.id,
     },
   });
+  addRegistryEntry(registry, {
+    id: created.id,
+    name: playerName,
+    normalizedName: normalizeNameKey(playerName),
+    role,
+    canonicalRole: role,
+    split,
+    photo: created.photo || null,
+    teamId: team.id,
+    teamName: team.name,
+    teamShortName: team.shortName || null,
+    canonicalTeamKey: targetCanonicalTeamKey,
+    snapshotRefs: 0,
+    refScore: 0,
+    updatedAt: created.updatedAt,
+  });
+  return created;
 }
 
 async function findLogicalSnapshotCandidate(data: {
@@ -303,6 +557,44 @@ async function findLogicalSnapshotCandidate(data: {
 
   if (grouped.length === 0) return null;
   return grouped[0];
+}
+
+async function findCrossTeamSnapshotConflict(data: {
+  league: string;
+  seasonYear: string;
+  role: string;
+  normalizedPlayerName: string;
+  tournamentName: string;
+  teamName: string;
+  teamShortName?: string | null;
+}) {
+  const targetTeamKey = normalizeTeamIdentityKey(data.teamName, data.teamShortName || null);
+  const candidates = await prisma.playerStatSnapshot.findMany({
+    where: {
+      league: data.league,
+      seasonYear: data.seasonYear,
+      role: data.role,
+      normalizedPlayerName: data.normalizedPlayerName,
+      tournamentName: data.tournamentName,
+    },
+    orderBy: [{ syncedAt: 'desc' }, { updatedAt: 'desc' }, { games: 'desc' }],
+    take: 20,
+    select: {
+      id: true,
+      playerId: true,
+      teamName: true,
+      teamShortName: true,
+      splitName: true,
+      sourceKey: true,
+    },
+  });
+
+  return (
+    candidates.find((item) => {
+      const candidateTeamKey = normalizeTeamIdentityKey(item.teamName, item.teamShortName || null);
+      return Boolean(candidateTeamKey) && candidateTeamKey !== targetTeamKey;
+    }) || null
+  );
 }
 
 function buildFillOnlySnapshotUpdate(existing: any, incoming: any, incomingSourceKey: string) {
@@ -422,14 +714,22 @@ export async function POST(request: Request) {
     }
 
     const playerPaths = new Set<string>();
+    const playerRegistry = await loadPlayerRegistry();
     let teamsCreated = 0;
     let playersCreated = 0;
     let snapshotsUpserted = 0;
     let snapshotsCreated = 0;
     let snapshotsMerged = 0;
     let snapshotsSourceMatched = 0;
+    let snapshotsSkipped = 0;
+    let snapshotsConflictSkipped = 0;
 
     for (const snapshot of snapshots) {
+      if (isSampleTournamentLike(snapshot.tournamentName) || isPlaceholderPlayerName(snapshot.playerName)) {
+        snapshotsSkipped += 1;
+        continue;
+      }
+
       const teamBefore = await findExistingTeam(
         normalizeText(snapshot.teamName),
         buildTeamShortName(snapshot.teamName, snapshot.teamShortName),
@@ -446,7 +746,11 @@ export async function POST(request: Request) {
           },
         },
       });
-      const player = await ensurePlayer(snapshot, team.id);
+      const player = await ensurePlayer(
+        snapshot,
+        { id: team.id, name: normalizeText(team.name), shortName: normalizeText(team.shortName) || null },
+        playerRegistry,
+      );
       if (!playerBefore) playersCreated += 1;
 
       const data = buildSnapshotCreateInput(snapshot, player.id, team.id);
@@ -465,6 +769,26 @@ export async function POST(request: Request) {
           });
 
       const target = existingBySourceKey || logicalCandidate;
+      const crossTeamConflict = target
+        ? null
+        : await findCrossTeamSnapshotConflict({
+            league: data.league,
+            seasonYear: data.seasonYear,
+            role: data.role,
+            normalizedPlayerName: data.normalizedPlayerName,
+            tournamentName: data.tournamentName,
+            teamName: data.teamName,
+            teamShortName: data.teamShortName,
+          });
+
+      if (
+        crossTeamConflict &&
+        isSuspiciousUnknownSnapshotLike(data.splitName, data.sourceKey)
+      ) {
+        snapshotsConflictSkipped += 1;
+        continue;
+      }
+
       if (target) {
         await prisma.playerStatSnapshot.update({
           where: { id: target.id },
@@ -495,6 +819,8 @@ export async function POST(request: Request) {
       snapshotsCreated,
       snapshotsMerged,
       snapshotsSourceMatched,
+      snapshotsSkipped,
+      snapshotsConflictSkipped,
       teamsCreated,
       playersCreated,
     });

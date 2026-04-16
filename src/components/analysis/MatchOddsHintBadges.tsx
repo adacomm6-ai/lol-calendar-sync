@@ -290,45 +290,45 @@ export default function MatchOddsHintBadges({ team, matchMeta }: MatchOddsHintBa
     if (!increaseMetric && !decreaseMetric && !exactLossStreakHint && !exactWinStreakHint) return null;
 
     return (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex w-full max-w-full flex-wrap items-center gap-2 overflow-hidden">
             {exactLossStreakHint ? (
                 <div
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${lossBadgeTone?.className}`}
+                    className={`inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border px-2.5 py-1 text-[11px] font-black ${lossBadgeTone?.className}`}
                     title={`${exactLossStreakHint.label} 按不同小局统计，今天已连续亏损 ${exactLossStreakHint.streak} 局，当前总输赢 ${exactLossStreakHint.total > 0 ? '+' : ''}${exactLossStreakHint.total}`}
                 >
-                    <span>!</span>
-                    <span>{exactLossStreakHint.label}</span>
-                    <span className={lossBadgeTone?.textClassName}>连亏 {exactLossStreakHint.streak}</span>
+                    <span className="shrink-0">!</span>
+                    <span className="truncate">{exactLossStreakHint.label}</span>
+                    <span className={`shrink-0 ${lossBadgeTone?.textClassName}`}>连亏 {exactLossStreakHint.streak}</span>
                 </div>
             ) : null}
             {exactWinStreakHint ? (
                 <div
-                    className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-black ${winBadgeTone?.className}`}
+                    className={`inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border px-2.5 py-1 text-[11px] font-black ${winBadgeTone?.className}`}
                     title={`${exactWinStreakHint.label} 按不同小局统计，今天已连续盈利 ${exactWinStreakHint.streak} 局，当前总输赢 ${exactWinStreakHint.total > 0 ? '+' : ''}${exactWinStreakHint.total}`}
                 >
-                    <span>+</span>
-                    <span>{exactWinStreakHint.label}</span>
-                    <span className={winBadgeTone?.textClassName}>连赢 {exactWinStreakHint.streak}</span>
+                    <span className="shrink-0">+</span>
+                    <span className="truncate">{exactWinStreakHint.label}</span>
+                    <span className={`shrink-0 ${winBadgeTone?.textClassName}`}>连赢 {exactWinStreakHint.streak}</span>
                 </div>
             ) : null}
             {increaseMetric ? (
                 <div
-                    className="inline-flex items-center gap-1 rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-black text-rose-100"
+                    className="inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border border-rose-400/30 bg-rose-500/10 px-2.5 py-1 text-[11px] font-black text-rose-100"
                     title={`${increaseMetric.label} 历史胜率 ${formatWinRate(increaseMetric.winRate)}，总输赢 ${increaseMetric.total > 0 ? '+' : ''}${increaseMetric.total}`}
                 >
-                    <span>+</span>
-                    <span>{increaseMetric.label}</span>
-                    <span className="text-rose-200/80">{formatWinRate(increaseMetric.winRate)}</span>
+                    <span className="shrink-0">+</span>
+                    <span className="truncate">{increaseMetric.label}</span>
+                    <span className="shrink-0 text-rose-200/80">{formatWinRate(increaseMetric.winRate)}</span>
                 </div>
             ) : null}
             {decreaseMetric ? (
                 <div
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-black text-emerald-100"
+                    className="inline-flex max-w-full items-center gap-1 overflow-hidden rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-black text-emerald-100"
                     title={`${decreaseMetric.label} 历史胜率 ${formatWinRate(decreaseMetric.winRate)}，总输赢 ${decreaseMetric.total > 0 ? '+' : ''}${decreaseMetric.total}`}
                 >
-                    <span>!</span>
-                    <span>{decreaseMetric.label}</span>
-                    <span className="text-emerald-200/80">{formatWinRate(decreaseMetric.winRate)}</span>
+                    <span className="shrink-0">!</span>
+                    <span className="truncate">{decreaseMetric.label}</span>
+                    <span className="shrink-0 text-emerald-200/80">{formatWinRate(decreaseMetric.winRate)}</span>
                 </div>
             ) : null}
         </div>

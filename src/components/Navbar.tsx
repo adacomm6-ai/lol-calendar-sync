@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
+import BrandMark from '@/components/BrandMark';
 
 export default function Navbar() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,12 +14,18 @@ export default function Navbar() {
                 <div className="flex items-center gap-10">
                     <div className="flex-shrink-0">
                         <Link href="/" className="group flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-gradient-to-tr from-blue-600 to-cyan-400 text-lg font-black text-white shadow-lg shadow-blue-500/20 transition-all group-hover:scale-110">
-                                L
+                            <div className="relative transition-all duration-300 group-hover:scale-[1.08] group-hover:-rotate-2">
+                                <div className="absolute inset-0 rounded-2xl bg-amber-300/15 blur-xl transition-all duration-300 group-hover:bg-amber-200/25" />
+                                <BrandMark className="relative h-10 w-10 drop-shadow-[0_10px_24px_rgba(234,179,8,0.22)]" />
                             </div>
-                            <span className="text-[18px] font-black tracking-tighter text-white transition-all group-hover:text-blue-400">
-                                LOL HP
-                            </span>
+                            <div className="flex flex-col leading-none">
+                                <span className="bg-gradient-to-r from-white via-amber-100 to-yellow-400 bg-clip-text text-[18px] font-black tracking-[-0.05em] text-transparent transition-all duration-300 group-hover:from-amber-50 group-hover:to-yellow-300">
+                                    LOL HP
+                                </span>
+                                <span className="mt-1 text-[9px] font-semibold uppercase tracking-[0.28em] text-amber-200/50 transition-all duration-300 group-hover:text-amber-100/72">
+                                    Match Intelligence
+                                </span>
+                            </div>
                         </Link>
                     </div>
 

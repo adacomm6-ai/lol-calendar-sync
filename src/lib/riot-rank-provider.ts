@@ -397,6 +397,7 @@ async function resolveRiotAccount(
     gameName: string;
     tagLine: string | null;
     puuid: string;
+    summonerId?: string | null;
     platform: string;
     regionGroup: string | null;
   },
@@ -425,8 +426,26 @@ async function resolveRiotAccount(
     }
   }
 
+  if (account.summonerId) {
+    const summoner = await riotRequest<RiotSummonerDto>(
+      platform.toLowerCase(),
+      `/lol/summoner/v4/summoners/${encodeURIComponent(account.summonerId)}`,
+      apiKey,
+    );
+    const byPuuid = await riotRequest<RiotAccountDto>(
+      regionalHost,
+      `/riot/account/v1/accounts/by-puuid/${encodeURIComponent(summoner.puuid)}`,
+      apiKey,
+    );
+
+    return {
+      regionGroup,
+      account: byPuuid,
+    };
+  }
+
   if (!account.gameName || !account.tagLine) {
-    throw new Error('Missing tagLine or valid puuid for Riot account lookup');
+    throw new Error('Missing tagLine, summonerId, or valid puuid for Riot account lookup');
   }
 
   const byRiotId = await riotRequest<RiotAccountDto>(
@@ -908,14 +927,16 @@ export async function syncRankAccountsViaRiot(options?: {
 
   for (const account of scopedAccounts) {
     try {
-      const shouldSkip = !account.gameName || (!account.tagLine && isManualPuuid(account.puuid));
+      const hasResolvableIdentity =
+        Boolean(account.tagLine) || Boolean(account.summonerId) || !isManualPuuid(account.puuid);
+      const shouldSkip = !account.gameName || !hasResolvableIdentity;
       if (shouldSkip) {
         results.push({
           accountId: account.id,
           playerId: account.playerId,
           accountName: buildAccountName(account),
           status: 'skipped',
-          message: 'Missing tagLine or Riot-resolvable puuid; manual mapping needs more data.',
+          message: 'Missing tagLine, summonerId, or Riot-resolvable puuid; manual mapping needs more data.',
         });
         continue;
       }

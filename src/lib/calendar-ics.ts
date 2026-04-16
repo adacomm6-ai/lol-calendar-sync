@@ -1,3 +1,6 @@
+import { promises as fs } from 'fs';
+import path from 'path';
+
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getSystemConfig } from '@/lib/config-service';
@@ -37,6 +40,15 @@ type StagePreferenceSummary = {
   hasUpcoming: boolean;
 };
 
+type CalendarIncrementalExportState = Record<string, string[]>;
+type RegionDateRangeMap = Record<
+  string,
+  {
+    from: Date | null;
+    to: Date | null;
+  }
+>;
+
 function toDate(value: Date | string | number | null | undefined): Date | null {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
@@ -48,6 +60,25 @@ function parsePositiveInt(raw: string | null, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function parseDateRangeBoundary(raw: string | null | undefined, boundary: 'start' | 'end') {
+  const text = String(raw || '').trim();
+  const matched = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!matched) return null;
+
+  const year = Number.parseInt(matched[1], 10);
+  const month = Number.parseInt(matched[2], 10);
+  const day = Number.parseInt(matched[3], 10);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+
+  const utcMs =
+    boundary === 'start'
+      ? Date.UTC(year, month - 1, day, -8, 0, 0, 0)
+      : Date.UTC(year, month - 1, day + 1, -8, 0, 0, 0) - 1;
+
+  return new Date(utcMs);
+}
+
 function parseRegionList(raw: string | null | undefined) {
   return Array.from(
     new Set(
@@ -57,6 +88,27 @@ function parseRegionList(raw: string | null | undefined) {
         .filter(Boolean),
     ),
   );
+}
+
+function parseRegionDateRangeMap(searchParams: URLSearchParams, regionFilters: string[]): RegionDateRangeMap {
+  const regionMap: RegionDateRangeMap = {};
+
+  for (const region of regionFilters) {
+    const upperRegion = region.toUpperCase();
+    const rawFrom = parseDateRangeBoundary(searchParams.get(`from_${upperRegion}`), 'start');
+    const rawTo = parseDateRangeBoundary(searchParams.get(`to_${upperRegion}`), 'end');
+    const normalizedFrom = rawFrom || (rawTo ? parseDateRangeBoundary(searchParams.get(`to_${upperRegion}`), 'start') : null);
+    const normalizedTo = rawTo || (rawFrom ? parseDateRangeBoundary(searchParams.get(`from_${upperRegion}`), 'end') : null);
+
+    if (normalizedFrom || normalizedTo) {
+      regionMap[upperRegion] = {
+        from: normalizedFrom,
+        to: normalizedTo,
+      };
+    }
+  }
+
+  return regionMap;
 }
 
 function normalizeFilterText(value: string | null | undefined) {
@@ -224,20 +276,36 @@ function summarizeStagePreference(stageId: string, label: string, matches: Calen
 function matchBelongsToAnyRegion(match: CalendarMatch, regionFilters: string[]) {
   if (regionFilters.length === 0) return true;
 
-  const tournamentUpper = String(match.tournament || '').toUpperCase();
-  const stageUpper = String(match.stage || '').toUpperCase();
-  const teamARegion = String(match.teamA?.region || '').toUpperCase();
-  const teamBRegion = String(match.teamB?.region || '').toUpperCase();
+  const matchRegions = getMatchRegions(match);
 
   return regionFilters.some((region) => {
     const target = region.toUpperCase();
-    return (
-      tournamentUpper.includes(target) ||
-      stageUpper.includes(target) ||
-      teamARegion.includes(target) ||
-      teamBRegion.includes(target)
-    );
+    return matchRegions.includes(target);
   });
+}
+
+function getMatchRegions(match: CalendarMatch) {
+  const candidates = [
+    String(match.tournament || '').toUpperCase(),
+    String(match.stage || '').toUpperCase(),
+    String(match.teamA?.region || '').toUpperCase(),
+    String(match.teamB?.region || '').toUpperCase(),
+  ];
+
+  const regions = new Set<string>();
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (candidate.includes('LPL')) regions.add('LPL');
+    if (candidate.includes('LCK')) regions.add('LCK');
+    if (candidate.includes('LEC')) regions.add('LEC');
+    if (candidate.includes('LJL')) regions.add('LJL');
+    if (candidate.includes('LTA')) regions.add('LTA');
+    if (candidate.includes('PCS')) regions.add('PCS');
+    if (candidate.includes('VCS')) regions.add('VCS');
+  }
+
+  return [...regions];
 }
 
 function dedupeCalendarMatches(matches: CalendarMatch[]) {
@@ -247,6 +315,40 @@ function dedupeCalendarMatches(matches: CalendarMatch[]) {
     deduped.set(match.id, match);
   }
   return [...deduped.values()];
+}
+
+function getCalendarIncrementalStateFilePath() {
+  return path.join(process.cwd(), 'data', 'calendar-export-state.json');
+}
+
+async function readCalendarIncrementalExportState() {
+  try {
+    const filePath = getCalendarIncrementalStateFilePath();
+    const raw = await fs.readFile(filePath, 'utf8');
+    const parsed = JSON.parse(raw) as CalendarIncrementalExportState;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeCalendarIncrementalExportState(state: CalendarIncrementalExportState) {
+  const filePath = getCalendarIncrementalStateFilePath();
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+}
+
+async function filterIncrementalCalendarMatches(matches: CalendarMatch[], stateKey: string) {
+  const state = await readCalendarIncrementalExportState();
+  const exportedIds = new Set(state[stateKey] || []);
+  const incrementalMatches = matches.filter((match) => match.id && !exportedIds.has(match.id));
+
+  if (incrementalMatches.length > 0) {
+    state[stateKey] = [...exportedIds, ...incrementalMatches.map((match) => match.id)];
+    await writeCalendarIncrementalExportState(state);
+  }
+
+  return incrementalMatches;
 }
 
 async function loadMergedRegionCalendarMatches(regionFilters: string[]) {
@@ -348,26 +450,56 @@ function matchesTeamFilter(match: CalendarMatch, teamFilter: string | null) {
   });
 }
 
-function filterMatchesByStatusAndWindow(matches: CalendarMatch[], statusFilter: string, days: number) {
+function filterMatchesByStatusAndWindow(
+  matches: CalendarMatch[],
+  statusFilter: string,
+  days: number,
+  dateRange?: {
+    from: Date | null;
+    to: Date | null;
+  },
+  regionDateRanges?: RegionDateRangeMap,
+) {
   const now = new Date();
-  const maxTime = now.getTime() + days * 24 * 60 * 60 * 1000;
+  const maxTime =
+    dateRange?.to?.getTime() ?? now.getTime() + days * 24 * 60 * 60 * 1000;
+  const minTime =
+    dateRange?.from?.getTime() ?? now.getTime() - 6 * 60 * 60 * 1000;
 
   return matches.filter((match) => {
     const start = toDate(match.startTime);
     if (!start) return false;
+    const startTime = start.getTime();
+    const matchRegions = getMatchRegions(match);
+
+    if (regionDateRanges && Object.keys(regionDateRanges).length > 0) {
+      const applicableRanges = matchRegions
+        .map((region) => regionDateRanges[region])
+        .filter(Boolean);
+
+      if (applicableRanges.length > 0) {
+        const withinAnyRegionWindow = applicableRanges.some((range) => {
+          const regionMin = range.from?.getTime() ?? minTime;
+          const regionMax = range.to?.getTime() ?? maxTime;
+          return startTime >= regionMin && startTime <= regionMax;
+        });
+
+        if (!withinAnyRegionWindow) return false;
+      }
+    }
 
     const finished = isFinishedStatus(match.status);
     const upperStatus = String(statusFilter || 'upcoming').trim().toLowerCase();
 
     if (upperStatus === 'finished') {
-      return finished && start.getTime() <= now.getTime();
+      return finished && startTime >= minTime && startTime <= maxTime;
     }
 
     if (upperStatus === 'all') {
-      return start.getTime() <= maxTime;
+      return startTime >= minTime && startTime <= maxTime;
     }
 
-    return !finished && start.getTime() >= now.getTime() - 6 * 60 * 60 * 1000 && start.getTime() <= maxTime;
+    return !finished && startTime >= minTime && startTime <= maxTime;
   });
 }
 
@@ -385,6 +517,11 @@ async function loadCalendarMatches(request: NextRequest) {
   const status = (searchParams.get('status') || 'upcoming').trim().toLowerCase();
   const days = parsePositiveInt(searchParams.get('days'), 120);
   const regionFilters = parseRegionList(searchParams.get('regions'));
+  const rawFromDate = parseDateRangeBoundary(searchParams.get('from'), 'start');
+  const rawToDate = parseDateRangeBoundary(searchParams.get('to'), 'end');
+  const fromDate = rawFromDate || (rawToDate ? parseDateRangeBoundary(searchParams.get('to'), 'start') : null);
+  const toDateBoundary = rawToDate || (rawFromDate ? parseDateRangeBoundary(searchParams.get('from'), 'end') : null);
+  const regionDateRanges = parseRegionDateRangeMap(searchParams, regionFilters);
 
   const useScheduleScope =
     searchParams.has('region') || searchParams.has('year') || searchParams.has('stage');
@@ -417,7 +554,10 @@ async function loadCalendarMatches(request: NextRequest) {
     });
   }
 
-  const filtered = filterMatchesByStatusAndWindow(rawMatches, status, days)
+  const filtered = filterMatchesByStatusAndWindow(rawMatches, status, days, {
+    from: fromDate,
+    to: toDateBoundary,
+  }, regionDateRanges)
     .filter((match) => matchBelongsToAnyRegion(match, regionFilters))
     .filter((match) => matchesTeamFilter(match, team))
     .sort((left, right) => {
@@ -487,6 +627,7 @@ export async function handleCalendarIcsRequest(
     defaultStatus?: string;
     defaultCalendarName?: string;
     defaultRegions?: string[];
+    incrementalExportStateKey?: string;
   },
 ) {
   try {
@@ -501,11 +642,22 @@ export async function handleCalendarIcsRequest(
     const forwardedRequest = new NextRequest(url, request);
     const { region, year, stage, regions, team, matches } = await loadCalendarMatches(forwardedRequest);
     const download = url.searchParams.get('download') === '1';
+    const exportMode = (url.searchParams.get('exportMode') || '').trim().toLowerCase();
+    const hasExplicitDateRange = Boolean(url.searchParams.get('from') || url.searchParams.get('to'));
+    const incrementalExportStateKey = options?.incrementalExportStateKey;
+    const shouldUseIncrementalExport =
+      download &&
+      Boolean(incrementalExportStateKey) &&
+      !hasExplicitDateRange &&
+      exportMode !== 'full';
+    const finalMatches = shouldUseIncrementalExport
+      ? await filterIncrementalCalendarMatches(matches, incrementalExportStateKey!)
+      : matches;
     const calendarName =
       options?.defaultCalendarName ||
       buildCalendarName({ region, year, stage, regions, team: team || undefined });
     const body = createIcsBody({
-      matches,
+      matches: finalMatches,
       calendarName,
       origin: forwardedRequest.nextUrl.origin,
     });
@@ -516,7 +668,9 @@ export async function handleCalendarIcsRequest(
       headers: {
         'Content-Type': download ? 'application/octet-stream' : 'text/calendar; charset=utf-8',
         'Content-Disposition': `${download ? 'attachment' : 'inline'}; filename="${encodeURIComponent(fileName)}"`,
-        'Cache-Control': 'public, max-age=300, s-maxage=300',
+        'Cache-Control': download ? 'no-store, no-cache, must-revalidate, max-age=0' : 'public, max-age=300, s-maxage=300',
+        Pragma: download ? 'no-cache' : 'public',
+        Expires: download ? '0' : '300',
         'X-Content-Type-Options': 'nosniff',
       },
     });

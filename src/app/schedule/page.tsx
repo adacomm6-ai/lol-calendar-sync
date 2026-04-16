@@ -563,7 +563,10 @@ export default async function SchedulePage({
                 </div>
             ) : (
                 <div className="space-y-6">
-                    <div className="sticky top-3 z-20 bg-white/95 backdrop-blur rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div
+                        id="schedule-quick-nav"
+                        className="sticky top-20 z-30 bg-white/95 backdrop-blur rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+                    >
                         <div className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 font-bold text-blue-700">
                                 最近优先视图
@@ -652,6 +655,7 @@ export default async function SchedulePage({
                             ))}
                         </section>
                     )}
+
                 </div>
             )}
         </div>

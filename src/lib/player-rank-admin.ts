@@ -4,18 +4,22 @@ import { Prisma } from '@prisma/client';
 import { discoverLeaguepediaRankAccounts } from '@/lib/leaguepedia-rank-discovery';
 import { discoverProRankAccountsFromOpgg } from '@/lib/opgg-rank-discovery';
 import { discoverProRankAccountsFromDpm, discoverProRankAccountsFromDpmUrl } from '@/lib/pro-rank-discovery';
+import { discoverProRankAccountsFromScoregg } from '@/lib/scoregg-rank-discovery';
 import {
   discoverProRankAccountsFromTrackingThePros,
   discoverProRankAccountsFromTrackingTheProsUrl,
 } from '@/lib/trackingthepros-rank-discovery';
 import { normalizeLeagueBucket } from '@/lib/player-snapshot';
 import {
+  clearCurrentSeasonRankEffectiveScopeCache,
   filterPlayersByCurrentSeasonRankEffectiveScope,
   getCurrentSeasonRankEffectiveScope,
   type CurrentSeasonRankEffectiveScope,
 } from '@/lib/rank-effective-pool';
+import { normalizeRankTextIfNeeded, sanitizeRankTextDeep } from '@/lib/rank-text-normalizer';
 import { syncRankAccountsViaRiot } from '@/lib/riot-rank-provider';
 import { getTeamAliasCandidates } from '@/lib/team-alias';
+import { buildRankDiscoveryNameVariants } from '@/lib/rank-discovery-name-variants';
 
 type RankSyncHistoryStatus = 'SUCCESS' | 'FAILED';
 
@@ -68,8 +72,8 @@ async function readRankSyncHistory(): Promise<RankSyncHistoryEntry[]> {
   try {
     const filePath = getRankSyncHistoryPath();
     const raw = await fs.readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    return Array.isArray(parsed) ? sanitizeRankTextDeep(parsed) : [];
   } catch {
     return [];
   }
@@ -78,7 +82,11 @@ async function readRankSyncHistory(): Promise<RankSyncHistoryEntry[]> {
 async function writeRankSyncHistory(entries: RankSyncHistoryEntry[]) {
   const filePath = getRankSyncHistoryPath();
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(entries.slice(0, RANK_SYNC_HISTORY_LIMIT), null, 2), 'utf8');
+  await fs.writeFile(
+    filePath,
+    JSON.stringify(sanitizeRankTextDeep(entries.slice(0, RANK_SYNC_HISTORY_LIMIT)), null, 2),
+    'utf8',
+  );
 }
 
 export async function exportRankSyncHistory() {
@@ -104,8 +112,8 @@ async function readRankSyncFailureState(): Promise<Record<string, RankSyncFailur
   try {
     const filePath = getRankSyncFailureStatePath();
     const raw = await fs.readFile(filePath, 'utf8');
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === 'object' ? parsed : {};
+    const parsed = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    return parsed && typeof parsed === 'object' ? sanitizeRankTextDeep(parsed) : {};
   } catch {
     return {};
   }
@@ -114,7 +122,7 @@ async function readRankSyncFailureState(): Promise<Record<string, RankSyncFailur
 async function writeRankSyncFailureState(state: Record<string, RankSyncFailureState>) {
   const filePath = getRankSyncFailureStatePath();
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(state, null, 2), 'utf8');
+  await fs.writeFile(filePath, JSON.stringify(sanitizeRankTextDeep(state), null, 2), 'utf8');
 }
 
 function toNumber(value: unknown): number {
@@ -146,6 +154,26 @@ function normalizeUnicodeText(value: string) {
     .toLowerCase()
     .replace(/\s+/g, '')
     .replace(/[^a-z0-9\u3131-\u318e\uac00-\ud7a3\u4e00-\u9fa5]+/g, '');
+}
+
+function mergeDistinctNoteText(...parts: Array<string | null | undefined>) {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  for (const part of parts) {
+    const text = normalizeRankTextIfNeeded(String(part || '')).replace(/\r/g, '\n');
+    if (!text.trim()) continue;
+    for (const line of text.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const normalizedKey = trimmed.replace(/\s+/g, ' ');
+      if (seen.has(normalizedKey)) continue;
+      seen.add(normalizedKey);
+      lines.push(trimmed);
+    }
+  }
+
+  return lines.length > 0 ? lines.join('\n') : null;
 }
 
 function buildRankAccountIdentityKey(input: {
@@ -209,6 +237,17 @@ function isPlaceholderRankAccountName(value: string | null | undefined) {
 
 function isManualPuuid(value: string | null | undefined) {
   return String(value || '').startsWith('manual:');
+}
+
+function supportsImmediateRankPromotion(input: {
+  tagLine?: string | null;
+  puuid?: string | null;
+}) {
+  const normalizedTagLine = String(input.tagLine || '').trim();
+  if (normalizedTagLine) return true;
+
+  const normalizedPuuid = String(input.puuid || '').trim();
+  return Boolean(normalizedPuuid) && !isManualPuuid(normalizedPuuid);
 }
 
 function isPuuidUniqueConstraintError(error: unknown) {
@@ -368,14 +407,47 @@ function normalizePlayerGroupRole(role: string) {
   return value || 'OTHER';
 }
 
+function getEquivalentAutoImportRoles(role: string) {
+  const normalized = normalizePlayerGroupRole(role);
+  if (normalized === 'SUP') return ['SUP', 'SUPPORT'];
+  if (normalized === 'JUN') return ['JUN', 'JUNGLE'];
+  if (normalized === 'ADC') return ['ADC', 'BOT', 'BOTTOM'];
+  if (normalized === 'MID') return ['MID', 'MIDDLE'];
+  if (normalized === 'TOP') return ['TOP'];
+
+  const rawRole = String(role || '').trim().toUpperCase();
+  return Array.from(new Set([rawRole, normalized].filter(Boolean)));
+}
+
 function buildAutoImportLoosePlayerKey(input: {
   region: string;
   playerName: string;
   role?: string | null;
+  teamShortName?: string | null;
+  teamName?: string | null;
 }) {
+  const normalizedPlayerName = normalizeUnicodeText(String(input.playerName || ''));
+  const teamPrefixCandidates = Array.from(
+    new Set(
+      [...getTeamAliasCandidates(input.teamShortName), ...getTeamAliasCandidates(input.teamName)]
+        .map((value) => normalizeUnicodeText(String(value || '')))
+        .filter(Boolean),
+    ),
+  );
+
+  let strippedPlayerName = normalizedPlayerName;
+  for (const prefix of teamPrefixCandidates) {
+    if (!prefix) continue;
+    if (strippedPlayerName.length <= prefix.length + 1) continue;
+    if (strippedPlayerName.startsWith(prefix)) {
+      strippedPlayerName = strippedPlayerName.slice(prefix.length);
+      break;
+    }
+  }
+
   return [
     String(input.region || '').trim().toUpperCase(),
-    String(input.playerName || '').trim().toLowerCase(),
+    strippedPlayerName || normalizedPlayerName,
     normalizePlayerGroupRole(String(input.role || '')),
   ].join('::');
 }
@@ -389,6 +461,8 @@ function getAutoImportPlayerKey(player: {
     region: player.team.region,
     playerName: player.name,
     role: player.role,
+    teamShortName: player.team.shortName,
+    teamName: player.team.name,
   });
 }
 
@@ -403,6 +477,8 @@ function pushAutoImportSearchCandidate(target: Set<string>, value?: string | nul
 type AutoImportSearchPlan = {
   pageCandidates: string[];
   broadCandidates: string[];
+  teamCandidates: string[];
+  deepSearch: boolean;
 };
 
 function buildAutoImportSearchCandidates(input: {
@@ -413,14 +489,21 @@ function buildAutoImportSearchCandidates(input: {
   seedPlayerName?: string | null;
   seedPlayerNames?: Array<string | null | undefined>;
   nameVariants?: Array<string | null | undefined>;
+  deepSearch?: boolean;
 }): AutoImportSearchPlan {
   const pageCandidates = new Set<string>();
   const broadCandidates = new Set<string>();
+  const deepSearch = input.deepSearch === true;
   const basePlayerNames = Array.from(
     new Set(
-      [input.playerName, input.seedPlayerName, ...(input.seedPlayerNames || []), ...(input.nameVariants || [])]
-        .filter(Boolean)
-        .map((value) => String(value).trim()),
+      buildRankDiscoveryNameVariants(input.playerName, [
+        input.seedPlayerName,
+        ...(input.seedPlayerNames || []),
+        ...(input.nameVariants || []),
+      ], {
+        includeSearchAliases: deepSearch,
+        includeDeepSearchAliases: deepSearch,
+      }),
     ),
   );
 
@@ -450,18 +533,118 @@ function buildAutoImportSearchCandidates(input: {
       pushAutoImportSearchCandidate(broadCandidates, `${compactTeamCandidate}${playerName}`);
       pushAutoImportSearchCandidate(broadCandidates, `${compactTeamCandidate}${compactPlayerName}`);
       pushAutoImportSearchCandidate(broadCandidates, `${compactPlayerName}${compactTeamCandidate}`);
+      pushAutoImportSearchCandidate(broadCandidates, `${teamCandidate}${playerName}`);
+      pushAutoImportSearchCandidate(broadCandidates, `${playerName}${teamCandidate}`);
     }
   }
 
-  const orderedPageCandidates = Array.from(pageCandidates).slice(0, 12);
+  const orderedPageCandidates = Array.from(pageCandidates).slice(0, deepSearch ? 28 : 16);
   const orderedBroadCandidates = Array.from(
     new Set([...orderedPageCandidates, ...Array.from(broadCandidates)]),
-  ).slice(0, 20);
+  ).slice(0, deepSearch ? 56 : 28);
 
   return {
     pageCandidates: orderedPageCandidates,
     broadCandidates: orderedBroadCandidates,
+    teamCandidates,
+    deepSearch,
   };
+}
+
+type AutoImportSourceSummary = {
+  key: string;
+  label: string;
+  queryCount: number;
+  discoveredCount: number;
+  usedCount: number;
+  urls: string[];
+  errors: string[];
+};
+
+function buildAutoImportSourceBreakdown(input: {
+  searchPlan: AutoImportSearchPlan;
+  candidateAccounts: AutoImportDiscoveredAccount[];
+  discoveredAccounts: Awaited<ReturnType<typeof discoverAutoImportAccountsByQueries>>;
+  sourceUrlAccounts: Awaited<ReturnType<typeof discoverAutoImportAccountsBySourceUrls>>;
+}) {
+  const buildSummary = (
+    key: string,
+    label: string,
+    queryCount: number,
+    accounts: AutoImportDiscoveredAccount[],
+    errors: string[],
+  ): AutoImportSourceSummary => {
+    const normalizedKey = key.toUpperCase();
+    const discovered = accounts.filter(
+      (account) =>
+        String(account.sourceHint || '')
+          .split('|')
+          .map((item) => item.trim().toUpperCase())
+          .includes(normalizedKey),
+    );
+    const used = input.candidateAccounts.filter(
+      (account) =>
+        String(account.sourceHint || '')
+          .split('|')
+          .map((item) => item.trim().toUpperCase())
+          .includes(normalizedKey),
+    );
+    const urls = Array.from(
+      new Set(
+        [...discovered, ...used]
+          .map((account) => String(account.sourceUrl || '').trim())
+          .filter(Boolean),
+      ),
+    );
+
+    return {
+      key,
+      label,
+      queryCount,
+      discoveredCount: discovered.length,
+      usedCount: used.length,
+      urls,
+      errors: Array.from(new Set(errors.filter(Boolean))),
+    };
+  };
+
+  return [
+    buildSummary(
+      'DPM',
+      'DPM',
+      input.searchPlan.pageCandidates.length + input.sourceUrlAccounts.dpmAccounts.length,
+      [...input.discoveredAccounts.dpmAccounts, ...input.sourceUrlAccounts.dpmAccounts],
+      input.discoveredAccounts.errors.filter((error) => /dpm/i.test(error)),
+    ),
+    buildSummary(
+      'TRACKING',
+      'TrackingThePros',
+      input.searchPlan.pageCandidates.length + input.sourceUrlAccounts.trackingAccounts.length,
+      [...input.discoveredAccounts.trackingAccounts, ...input.sourceUrlAccounts.trackingAccounts],
+      [...input.discoveredAccounts.errors, ...input.sourceUrlAccounts.errors].filter((error) => /tracking/i.test(error)),
+    ),
+    buildSummary(
+      'OPGG',
+      'OP.GG',
+      input.searchPlan.broadCandidates.length,
+      input.discoveredAccounts.opggAccounts,
+      input.discoveredAccounts.errors.filter((error) => /op\.gg/i.test(error)),
+    ),
+    buildSummary(
+      'LEAGUEPEDIA',
+      'Leaguepedia',
+      input.searchPlan.pageCandidates.length,
+      input.discoveredAccounts.leaguepediaAccounts,
+      input.discoveredAccounts.errors.filter((error) => /leaguepedia/i.test(error)),
+    ),
+    buildSummary(
+      'SCOREGG',
+      'ScoreGG',
+      input.discoveredAccounts.queryCounts?.scoregg ?? input.searchPlan.pageCandidates.length,
+      input.discoveredAccounts.scoreggAccounts,
+      input.discoveredAccounts.errors.filter((error) => /scoregg/i.test(error)),
+    ),
+  ];
 }
 
 type AutoImportDiscoveredAccount = {
@@ -470,9 +653,10 @@ type AutoImportDiscoveredAccount = {
   platform: string;
   regionGroup: string;
   gameName: string;
-  tagLine: string;
+  tagLine: string | null;
+  summonerId?: string | null;
   note?: string | null;
-  sourceHint?: 'SEED' | 'OPGG' | 'DPM' | 'TRACKING' | 'LEAGUEPEDIA' | string | null;
+  sourceHint?: 'SEED' | 'OPGG' | 'DPM' | 'TRACKING' | 'LEAGUEPEDIA' | 'SCOREGG' | string | null;
 };
 
 function mapExistingEquivalentAccounts(
@@ -482,6 +666,7 @@ function mapExistingEquivalentAccounts(
       regionGroup: string | null;
       gameName: string;
       tagLine: string | null;
+      summonerId: string | null;
       notes: string | null;
       source: string | null;
       status: string | null;
@@ -491,14 +676,21 @@ function mapExistingEquivalentAccounts(
   return players.flatMap((player) =>
     (player.rankAccounts || [])
       .filter((account) => !isPlaceholderCoverageAccount(account))
-      .filter((account) => String(account.gameName || '').trim() && String(account.tagLine || '').trim())
+      .filter((account) => {
+        const notes = String(account.notes || '');
+        const status = String(account.status || '').toUpperCase();
+        if (status !== 'ARCHIVED') return true;
+        return !/低质量自动发现账号|重复账号|Riot 404|not_found|无效映射/iu.test(notes);
+      })
+      .filter((account) => String(account.gameName || '').trim() && (String(account.tagLine || '').trim() || account.summonerId))
       .map((account) => ({
         sourceUrl: extractAutoImportSourceUrl(account.notes) || null,
         platformLabel: String(account.platform || '').trim().toUpperCase(),
         platform: String(account.platform || '').trim().toUpperCase(),
         regionGroup: String(account.regionGroup || '').trim().toUpperCase() || 'ASIA',
         gameName: String(account.gameName || '').trim(),
-        tagLine: String(account.tagLine || '').trim(),
+        tagLine: String(account.tagLine || '').trim() || null,
+        summonerId: String(account.summonerId || '').trim() || null,
         note:
           [account.notes, String(account.status || '').toUpperCase() === 'ARCHIVED' ? '兄弟记录归档真号回流' : '兄弟记录已有账号']
             .filter(Boolean)
@@ -513,13 +705,27 @@ async function discoverAutoImportAccountsByQueries(searchPlan: AutoImportSearchP
   const opggAccounts: AutoImportDiscoveredAccount[] = [];
   const trackingAccounts: AutoImportDiscoveredAccount[] = [];
   const leaguepediaAccounts: AutoImportDiscoveredAccount[] = [];
+  const scoreggAccounts: AutoImportDiscoveredAccount[] = [];
   const errors: string[] = [];
   const sourceUrls = new Set<string>();
+  const scoreggProcessedQueries = new Set<string>();
 
   for (const searchCandidate of searchPlan.pageCandidates) {
-    const [dpm, tracking] = await Promise.all([
+    const normalizedScoreggQuery = normalizeAutoImportLookup(searchCandidate).toLowerCase();
+    const shouldQueryScoregg =
+      Boolean(normalizedScoreggQuery) && !scoreggProcessedQueries.has(normalizedScoreggQuery);
+    if (shouldQueryScoregg) {
+      scoreggProcessedQueries.add(normalizedScoreggQuery);
+    }
+
+    const [dpm, tracking, scoregg] = await Promise.all([
       discoverProRankAccountsFromDpm(searchCandidate).catch(() => null),
       discoverProRankAccountsFromTrackingThePros(searchCandidate).catch(() => null),
+      shouldQueryScoregg
+        ? discoverProRankAccountsFromScoregg(searchCandidate, {
+            teamCandidates: searchPlan.teamCandidates,
+          }).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     if (dpm?.success) {
@@ -535,6 +741,13 @@ async function discoverAutoImportAccountsByQueries(searchPlan: AutoImportSearchP
     } else if (tracking?.error) {
       errors.push(tracking.error);
     }
+
+    if (scoregg?.success) {
+      sourceUrls.add(scoregg.sourceUrl || '');
+      scoreggAccounts.push(...scoregg.accounts.map((account) => ({ ...account, sourceHint: 'SCOREGG' as const })));
+    } else if (scoregg?.error) {
+      errors.push(scoregg.error);
+    }
   }
 
   for (const searchCandidate of searchPlan.broadCandidates) {
@@ -548,6 +761,7 @@ async function discoverAutoImportAccountsByQueries(searchPlan: AutoImportSearchP
   }
 
   const preliminaryCandidates = pickPreferredAutoImportAccounts([
+    ...scoreggAccounts,
     ...trackingAccounts,
     ...opggAccounts,
     ...dpmAccounts,
@@ -570,6 +784,7 @@ async function discoverAutoImportAccountsByQueries(searchPlan: AutoImportSearchP
       }
 
       const merged = pickPreferredAutoImportAccounts([
+        ...scoreggAccounts,
         ...trackingAccounts,
         ...opggAccounts,
         ...dpmAccounts,
@@ -585,6 +800,10 @@ async function discoverAutoImportAccountsByQueries(searchPlan: AutoImportSearchP
     opggAccounts,
     trackingAccounts,
     leaguepediaAccounts,
+    scoreggAccounts,
+    queryCounts: {
+      scoregg: scoreggProcessedQueries.size,
+    },
     errors: Array.from(new Set(errors.filter(Boolean))),
     sourceUrls: Array.from(sourceUrls).filter(Boolean),
   };
@@ -670,9 +889,16 @@ function pickCanonicalAutoImportPlayer<T extends {
   rankAccounts: Array<{ isPrimary: boolean; isActiveCandidate: boolean; confidence: number | null; status?: string | null }>;
   updatedAt: Date;
 }>(players: T[], preferredPlayerId?: string) {
+  const RECENCY_CANONICAL_THRESHOLD_MS = 5 * 60 * 1000;
   return players
     .slice()
-    .sort((left, right) => scoreAutoImportPlayer(right, preferredPlayerId) - scoreAutoImportPlayer(left, preferredPlayerId))[0];
+    .sort((left, right) => {
+      const updatedAtDiff = new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+      if (Math.abs(updatedAtDiff) >= RECENCY_CANONICAL_THRESHOLD_MS) {
+        return updatedAtDiff;
+      }
+      return scoreAutoImportPlayer(right, preferredPlayerId) - scoreAutoImportPlayer(left, preferredPlayerId);
+    })[0];
 }
 
 function getAutoImportSourceWeight(sourceHint?: string | null) {
@@ -713,12 +939,43 @@ function buildAutoImportAccountKey(input: {
   platform?: string | null;
   gameName?: string | null;
   tagLine?: string | null;
+  summonerId?: string | null;
 }) {
+  const normalizedTagOrSummoner = input.tagLine
+    ? normalizeUnicodeText(String(input.tagLine || ''))
+    : `sid:${normalizeUnicodeText(String(input.summonerId || ''))}`;
   return [
     normalizeAutoImportPlatform(input.platform),
     normalizeUnicodeText(String(input.gameName || '')),
-    normalizeUnicodeText(String(input.tagLine || '')),
+    normalizedTagOrSummoner,
   ].join('::');
+}
+
+const BLOCKED_AUTO_IMPORT_ACCOUNT_KEYS = new Set<string>([
+  buildAutoImportAccountKey({ platform: 'KR', gameName: '엔피아', tagLine: '0107' }),
+  buildAutoImportAccountKey({ platform: 'KR', gameName: '형석자동차12', tagLine: '8468' }),
+  buildAutoImportAccountKey({ platform: 'KR', gameName: '樱吹雪Ycx', tagLine: 'Ycx' }),
+  buildAutoImportAccountKey({ platform: 'KR', gameName: 'magickshield', tagLine: '킹콩킹콩d' }),
+  buildAutoImportAccountKey({ platform: 'KR', gameName: '킹콩출현', tagLine: '킹콩킹콩' }),
+  buildAutoImportAccountKey({ platform: 'BR1', gameName: 'Rio de Janeiro', tagLine: '브라질' }),
+  buildAutoImportAccountKey({ platform: 'NA1', gameName: '안녕 캐나다', tagLine: '캐나다' }),
+  buildAutoImportAccountKey({ platform: 'NA1', gameName: 'Pepe babo', tagLine: 'LYON' }),
+]);
+
+function isBlockedAutoImportAccount(input: {
+  platform?: string | null;
+  gameName?: string | null;
+  tagLine?: string | null;
+  summonerId?: string | null;
+}) {
+  return BLOCKED_AUTO_IMPORT_ACCOUNT_KEYS.has(
+    buildAutoImportAccountKey({
+      platform: normalizeAutoImportPlatform(input.platform),
+      gameName: input.gameName,
+      tagLine: input.tagLine,
+      summonerId: input.summonerId,
+    }),
+  );
 }
 
 type LocalAutoImportAccount = {
@@ -908,6 +1165,15 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         sourceUrl: 'https://op.gg/lol/spectate/list/pro-gamer?region=kr',
         note: '本地优先种子：OP.GG 职业榜确认',
       },
+      {
+        platformLabel: 'BR',
+        platform: 'BR1',
+        regionGroup: 'AMERICAS',
+        gameName: 'Doggokule',
+        tagLine: '1234',
+        sourceUrl: 'https://www.trackingthepros.com/player/HongQ',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
     ],
   ],
   [
@@ -939,16 +1205,108 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
     ],
   ],
   [
+    'LPL::369',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Xxqqq',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/369',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '78120855del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/369',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
     'LPL::monki',
     [
       {
         platformLabel: 'KR',
         platform: 'KR',
         regionGroup: 'ASIA',
-        gameName: 'we总司令',
-        tagLine: 'monki',
-        sourceUrl: 'https://dpm.lol/we%E6%80%BB%E5%8F%B8%E4%BB%A4-monki?page=1',
-        note: '本地优先种子：DPM 公开页面确认',
+        gameName: 'WangPiaoLiang',
+        tagLine: '梦齐大魔王',
+        sourceUrl: 'https://www.trackingthepros.com/player/Monki',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LPL::bin',
+    [
+      {
+        platformLabel: 'BR',
+        platform: 'BR1',
+        regionGroup: 'AMERICAS',
+        gameName: 'chenzebin',
+        tagLine: '5599',
+        sourceUrl: 'https://www.trackingthepros.com/player/Bin',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'BLGBin ge',
+        tagLine: 'EUW',
+        sourceUrl: 'https://www.trackingthepros.com/player/Bin',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LPL::elk',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '91051146del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Elk',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '95110216del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Elk',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LPL::flandre',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '77060238del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Flandre',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '95310226del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Flandre',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
       },
     ],
   ],
@@ -1017,6 +1375,38 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
     ],
   ],
   [
+    'LPL::meiko',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '미나모토 치세',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Meiko',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '95270217del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Meiko',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '1773786del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Meiko',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
     'LPL::liangchen',
     [
       {
@@ -1041,6 +1431,24 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         tagLine: 'OMG',
         sourceUrl: 'https://op.gg/lol/summoners/kr/Moham-OMG',
         note: '本地优先种子：OP.GG 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '张海超',
+        tagLine: 'LPL',
+        sourceUrl: 'https://www.trackingthepros.com/player/Moham',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'Red Moham',
+        tagLine: 'hihi',
+        sourceUrl: 'https://lol.fandom.com/wiki/Moham',
+        note: '本地优先种子：Leaguepedia 公开 Soloqueue ID',
       },
     ],
   ],
@@ -1316,15 +1724,6 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         platformLabel: 'KR',
         platform: 'KR',
         regionGroup: 'ASIA',
-        gameName: '형석자동차12',
-        tagLine: '8468',
-        sourceUrl: 'https://www.trackingthepros.com/player/About',
-        note: '本地优先种子：TrackingThePros 公开页面确认',
-      },
-      {
-        platformLabel: 'KR',
-        platform: 'KR',
-        regionGroup: 'ASIA',
         gameName: '네 주인님',
         tagLine: '5508',
         sourceUrl: 'https://www.trackingthepros.com/player/About',
@@ -1356,6 +1755,34 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         gameName: 'qetadgzcb135',
         tagLine: 'KR1',
         sourceUrl: 'https://www.trackingthepros.com/player/Croc',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LPL::tarzan',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'jgggggg',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Tarzan',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LPL::shanks',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '98133485del',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Shanks',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
     ],
@@ -1432,6 +1859,15 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         sourceUrl: 'https://www.trackingthepros.com/player/Hena',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
+      {
+        platformLabel: 'NA',
+        platform: 'NA1',
+        regionGroup: 'AMERICAS',
+        gameName: 'AD King',
+        tagLine: 'LYON',
+        sourceUrl: 'https://www.trackingthepros.com/player/Hena',
+        note: '本地优先种子：TrackingThePros 隐藏 inactive 账号确认',
+      },
     ],
   ],
   [
@@ -1500,6 +1936,20 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
     ],
   ],
   [
+    'LPL::sheer',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '海牛阿福的勇士',
+        tagLine: '666',
+        sourceUrl: 'https://op.gg/lol/summoners/kr/%E6%B5%B7%E7%89%9B%E9%98%BF%E7%A6%8F%E7%9A%84%E5%8B%87%E5%A3%AB-666',
+        note: '本地优先种子：OP.GG 公开页面确认',
+      },
+    ],
+  ],
+  [
     'LPL::saber',
     [
       {
@@ -1508,6 +1958,24 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         regionGroup: 'ASIA',
         gameName: 'Sama',
         tagLine: 'KR2',
+        sourceUrl: 'https://www.trackingthepros.com/player/Saber',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Aemeath',
+        tagLine: '爱弥斯',
+        sourceUrl: 'https://www.trackingthepros.com/player/Saber',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '부탁해',
+        tagLine: 'KR20',
         sourceUrl: 'https://www.trackingthepros.com/player/Saber',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
@@ -1537,7 +2005,7 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         gameName: '改成归途有风',
         tagLine: 'yfcg',
         sourceUrl: 'https://www.trackingthepros.com/player/Ycx',
-        note: '本地优先种子：TrackingThePros 公开页面确认',
+        note: '本地优先种子：历史保留真号',
       },
     ],
   ],
@@ -1658,6 +2126,29 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         tagLine: 'KR1',
         sourceUrl: 'https://www.trackingthepros.com/player/Care',
         note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Yondaime',
+        tagLine: 'Luo',
+        sourceUrl: 'https://www.trackingthepros.com/player/Care',
+        note: '本地优先种子：TrackingThePros 隐藏 inactive 账号确认',
+      },
+    ],
+  ],
+  [
+    'LPL::erha',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'qwerfdlp',
+        tagLine: '23967',
+        sourceUrl: 'https://dpm.lol/pro/Erha',
+        note: '本地优先种子：DPM 公开页面确认',
       },
     ],
   ],
@@ -1823,6 +2314,162 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
     ],
   ],
   [
+    'LCK::faker',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Deft',
+        tagLine: '8366',
+        sourceUrl: 'https://new.trackingthepros.com/player/Faker',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'wincg',
+        tagLine: '84926',
+        sourceUrl: 'https://www.trackingthepros.com/player/Faker',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'NA',
+        platform: 'NA1',
+        regionGroup: 'AMERICAS',
+        gameName: 'Neo Hide on bush',
+        tagLine: 'NA1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Faker',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::oner',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'T1 Oner',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Oner',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'Thinking PLZ',
+        tagLine: 'EUW',
+        sourceUrl: 'https://www.trackingthepros.com/player/Oner',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'NA',
+        platform: 'NA1',
+        regionGroup: 'AMERICAS',
+        gameName: 'Wakanda f0rever',
+        tagLine: 'NA1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Oner',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::doran',
+    [
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'HO1WQYETAN',
+        tagLine: 'EUW',
+        sourceUrl: 'https://www.trackingthepros.com/player/Doran',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'NA',
+        platform: 'NA1',
+        regionGroup: 'AMERICAS',
+        gameName: 'F1F1F1F1',
+        tagLine: 'NA1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Doran',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::chovy',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '맞짱깔류민석',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Chovy',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'Shrimp Shark',
+        tagLine: '43083',
+        sourceUrl: 'https://www.trackingthepros.com/player/Chovy',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'NA',
+        platform: 'NA1',
+        regionGroup: 'AMERICAS',
+        gameName: 'Jeremy Bernstein',
+        tagLine: '95102',
+        sourceUrl: 'https://www.trackingthepros.com/player/Chovy',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::peyz',
+    [
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'ABCDPEYZ',
+        tagLine: 'EUW',
+        sourceUrl: 'https://www.trackingthepros.com/player/Peyz',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'qwewqrsad2w',
+        tagLine: '11111',
+        sourceUrl: 'https://www.trackingthepros.com/player/Peyz',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::perfect',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'PerfecT',
+        tagLine: '132',
+        sourceUrl: 'https://www.trackingthepros.com/player/PerfecT',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
     'LCK::andil',
     [
       {
@@ -1906,6 +2553,52 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         gameName: 'BRO Namgung',
         tagLine: '1004',
         sourceUrl: 'https://www.trackingthepros.com/player/Namgung',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::gideon',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '초록이필요해',
+        tagLine: 'KR3',
+        sourceUrl: 'https://www.trackingthepros.com/player/GIDEON',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '초록이필요해',
+        tagLine: 'KR2',
+        sourceUrl: 'https://www.trackingthepros.com/player/GIDEON',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::roamer',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '당신 탓인 걸요',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Roamer',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'TLTLTL',
+        tagLine: 'TLTL',
+        sourceUrl: 'https://www.trackingthepros.com/player/Roamer',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
     ],
@@ -2178,15 +2871,6 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         sourceUrl: 'https://www.trackingthepros.com/player/Duro',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
-      {
-        platformLabel: 'NA',
-        platform: 'NA1',
-        regionGroup: 'AMERICAS',
-        gameName: '안녕 캐나다',
-        tagLine: '캐나다',
-        sourceUrl: 'https://www.trackingthepros.com/player/Duro',
-        note: '本地优先种子：TrackingThePros 公开页面确认',
-      },
     ],
   ],
   [
@@ -2375,6 +3059,24 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         sourceUrl: 'https://www.trackingthepros.com/player/Cuzz',
         note: '本地优先种子：TrackingThePros 公开页面确认',
       },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Cuzz',
+        tagLine: 'KR1',
+        sourceUrl: 'https://www.trackingthepros.com/player/Cuzz',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+      {
+        platformLabel: 'EUW',
+        platform: 'EUW1',
+        regionGroup: 'EUROPE',
+        gameName: 'Beube',
+        tagLine: 'EUW',
+        sourceUrl: 'https://www.trackingthepros.com/player/Cuzz',
+        note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
     ],
   ],
   [
@@ -2408,15 +3110,6 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
   [
     'LCK::pollu',
     [
-      {
-        platformLabel: 'KR',
-        platform: 'KR',
-        regionGroup: 'ASIA',
-        gameName: '엔피아',
-        tagLine: '0107',
-        sourceUrl: 'https://www.trackingthepros.com/player/Pollu',
-        note: '本地优先种子：TrackingThePros 公开页面确认',
-      },
     ],
   ],
   [
@@ -2439,6 +3132,29 @@ const LOCAL_PRIORITY_AUTO_IMPORT_ACCOUNTS = new Map<string, LocalAutoImportAccou
         tagLine: 'kr2',
         sourceUrl: 'https://www.trackingthepros.com/player/Sponge',
         note: '本地优先种子：TrackingThePros 公开页面确认',
+      },
+    ],
+  ],
+  [
+    'LCK::taeyoon',
+    [
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: '고수닭갈비',
+        tagLine: '먹고싶다요',
+        sourceUrl: 'https://dpm.lol/pro/Taeyoon',
+        note: '本地优先种子：DPM 公开页面确认',
+      },
+      {
+        platformLabel: 'KR',
+        platform: 'KR',
+        regionGroup: 'ASIA',
+        gameName: 'Airline',
+        tagLine: 'A A',
+        sourceUrl: 'https://dpm.lol/pro/Taeyoon',
+        note: '本地优先种子：DPM 公开页面确认',
       },
     ],
   ],
@@ -2527,6 +3243,7 @@ function pickPreferredAutoImportAccounts<
     platform?: string | null;
     gameName?: string | null;
     tagLine?: string | null;
+    summonerId?: string | null;
     sourceHint?: string | null;
     sourceUrl?: string | null;
     note?: string | null;
@@ -2537,7 +3254,9 @@ function pickPreferredAutoImportAccounts<
     accounts.reduce((map, account) => {
       const platform = normalizeAutoImportPlatform(account.platform);
       if (!supportedPlatforms.has(platform as (typeof AUTO_IMPORT_PLATFORM_PRIORITY)[number])) return map;
-      if (!String(account.gameName || '').trim() || !String(account.tagLine || '').trim()) return map;
+      const hasResolvableIdentity = String(account.tagLine || '').trim() || String(account.summonerId || '').trim();
+      if (!String(account.gameName || '').trim() || !hasResolvableIdentity) return map;
+      if (isBlockedAutoImportAccount(account)) return map;
       const key = buildAutoImportAccountKey(account);
       const existing = map.get(key);
       if (!existing) {
@@ -2611,7 +3330,8 @@ async function upsertAutoDiscoveredAccount(input: {
   platform: string;
   regionGroup: string;
   gameName: string;
-  tagLine: string;
+  tagLine: string | null;
+  summonerId?: string | null;
   source: string;
   confidence: number;
   isPrimary: boolean;
@@ -2620,6 +3340,10 @@ async function upsertAutoDiscoveredAccount(input: {
   overwriteExisting?: boolean;
   equivalentPlayerIds?: string[];
 }) {
+  if (isBlockedAutoImportAccount(input)) {
+    return { status: 'skipped' as const, accountId: null };
+  }
+
   const identityKey = buildRankAccountIdentityKey({
     platform: input.platform,
     gameName: input.gameName,
@@ -2635,6 +3359,7 @@ async function upsertAutoDiscoveredAccount(input: {
       platform: true,
       gameName: true,
       tagLine: true,
+      summonerId: true,
       status: true,
       notes: true,
       confidence: true,
@@ -2652,17 +3377,27 @@ async function upsertAutoDiscoveredAccount(input: {
       return { status: 'skipped' as const, accountId: existing.id };
     }
 
+    const existingSupportsImmediatePromotion = supportsImmediateRankPromotion({
+      tagLine: existing.tagLine,
+    });
+    const inputSupportsImmediatePromotion = supportsImmediateRankPromotion({
+      tagLine: input.tagLine,
+    });
+
     await updateRankAccount(existing.id, {
       platform: input.platform,
       regionGroup: input.regionGroup,
       gameName: input.gameName,
       tagLine: input.tagLine,
+      summonerId: input.summonerId,
       source: input.source,
       status: 'ACTIVE',
       confidence: Math.max(toNumber(existing.confidence), input.confidence),
-      notes: [existing.notes, input.notes].filter(Boolean).join('\n'),
-      isPrimary: input.isPrimary || existing.isPrimary,
-      isActiveCandidate: input.isActiveCandidate || existing.isActiveCandidate,
+      notes: mergeDistinctNoteText(existing.notes, input.notes),
+      isPrimary: (input.isPrimary && inputSupportsImmediatePromotion) || (existing.isPrimary && existingSupportsImmediatePromotion),
+      isActiveCandidate:
+        (input.isActiveCandidate && inputSupportsImmediatePromotion) ||
+        (existing.isActiveCandidate && existingSupportsImmediatePromotion),
       lastVerifiedAt: new Date().toISOString(),
     });
 
@@ -2683,6 +3418,7 @@ async function upsertAutoDiscoveredAccount(input: {
       platform: true,
       gameName: true,
       tagLine: true,
+      summonerId: true,
       confidence: true,
       isPrimary: true,
       isActiveCandidate: true,
@@ -2733,6 +3469,12 @@ async function upsertAutoDiscoveredAccount(input: {
     }
 
     const previousPlayerId = globalExisting.playerId;
+    const globalExistingSupportsImmediatePromotion = supportsImmediateRankPromotion({
+      tagLine: globalExisting.tagLine,
+    });
+    const inputSupportsImmediatePromotion = supportsImmediateRankPromotion({
+      tagLine: input.tagLine,
+    });
     await prisma.playerRankAccount.update({
       where: { id: globalExisting.id },
       data: {
@@ -2741,12 +3483,17 @@ async function upsertAutoDiscoveredAccount(input: {
         regionGroup: input.regionGroup,
         gameName: input.gameName,
         tagLine: input.tagLine,
+        summonerId: input.summonerId || globalExisting.summonerId,
         source: input.source,
         status: 'ACTIVE',
         confidence: Math.max(toNumber(globalExisting.confidence), input.confidence),
-        notes: [globalExisting.notes, input.notes].filter(Boolean).join('\n'),
-        isPrimary: input.isPrimary || globalExisting.isPrimary,
-        isActiveCandidate: input.isActiveCandidate || globalExisting.isActiveCandidate,
+        notes: mergeDistinctNoteText(globalExisting.notes, input.notes),
+        isPrimary:
+          (input.isPrimary && inputSupportsImmediatePromotion) ||
+          (globalExisting.isPrimary && globalExistingSupportsImmediatePromotion),
+        isActiveCandidate:
+          (input.isActiveCandidate && inputSupportsImmediatePromotion) ||
+          (globalExisting.isActiveCandidate && globalExistingSupportsImmediatePromotion),
         lastVerifiedAt: new Date(),
       },
     });
@@ -2766,6 +3513,7 @@ async function upsertAutoDiscoveredAccount(input: {
     regionGroup: input.regionGroup,
     gameName: input.gameName,
     tagLine: input.tagLine,
+    summonerId: input.summonerId,
     source: input.source,
     status: 'ACTIVE',
     confidence: input.confidence,
@@ -2787,9 +3535,11 @@ async function getEquivalentPlayersForAutoImport(input: {
 }) {
   const allCandidates = await prisma.player.findMany({
     where: {
-      name: input.playerName,
       team: {
         region: input.region,
+      },
+      role: {
+        in: getEquivalentAutoImportRoles(input.role),
       },
     },
     include: {
@@ -2802,6 +3552,8 @@ async function getEquivalentPlayersForAutoImport(input: {
     region: input.region,
     playerName: input.playerName,
     role: input.role,
+    teamShortName: input.teamShortName,
+    teamName: input.teamName,
   });
 
   const siblings = allCandidates.filter((candidate) => getAutoImportPlayerKey(candidate) === targetKey);
@@ -2820,6 +3572,8 @@ export async function autoImportLeagueRankAccounts(options?: {
   limit?: number;
   forceRescan?: boolean;
   playerNames?: string[];
+  effectiveScope?: CurrentSeasonRankEffectiveScope;
+  deepSearch?: boolean;
 }) {
   return autoImportLeagueRankAccountsCanonical(options);
 }
@@ -3010,6 +3764,13 @@ export async function autoImportLeagueRankAccounts(options?: {
         null;
 
       if (candidateAccounts.length === 0) {
+        const errorSummary = Array.from(
+          new Set(
+            [...discoveredAccounts.errors, ...sourceUrlAccounts.errors]
+              .map((item) => String(item || '').trim())
+              .filter(Boolean),
+          ),
+        );
         return {
           playerId: player.id,
           playerName: player.name,
@@ -3109,7 +3870,7 @@ export async function autoImportLeagueRankAccounts(options?: {
 
   return {
     success: true,
-    provider: 'seed+tracking+dpm+opgg+leaguepedia',
+    provider: 'seed+tracking+scoregg+dpm+opgg+leaguepedia',
     regions: targetRegions,
     attemptedPlayers: limitedPlayers.length,
     created: results.reduce((total, item) => total + item.created, 0),
@@ -3130,6 +3891,7 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
   forceRescan?: boolean;
   effectiveScope?: CurrentSeasonRankEffectiveScope;
   playerNames?: string[];
+  deepSearch?: boolean;
 }) {
   const targetRegions = (options?.regions?.length ? options.regions : [...AUTO_IMPORT_REGIONS]).map((item) =>
     String(item || '').trim().toUpperCase(),
@@ -3137,48 +3899,113 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
   const effectiveScope =
     options?.effectiveScope || (await getCurrentSeasonRankEffectiveScope({ regions: targetRegions }));
 
-  const players = await prisma.player.findMany({
-    where: {
-      team: {
-        region: {
-          in: targetRegions,
-        },
-      },
-      ...(options?.forceRescan
-        ? {}
-        : {
-            OR: [
-              { rankAccounts: { none: {} } },
-              {
-                rankAccounts: {
-                  some: {
-                    status: 'ARCHIVED',
+  const archivedPlayerIds = options?.forceRescan
+    ? new Set<string>()
+    : new Set(
+        (
+          await prisma.playerRankAccount.findMany({
+            where: {
+              status: 'ARCHIVED',
+              player: {
+                team: {
+                  region: {
+                    in: targetRegions,
                   },
                 },
               },
-            ],
+            },
+            select: {
+              playerId: true,
+            },
+          })
+        ).map((item) => item.playerId),
+      );
+  const targetPlayerNames = new Set(
+    (options?.playerNames || []).map((item) => normalizeUnicodeText(String(item || ''))).filter(Boolean),
+  );
+  const scopedPreferredPlayerIds =
+    targetPlayerNames.size === 0 && (effectiveScope.preferredPlayerIds || []).length > 0
+      ? effectiveScope.preferredPlayerIds
+      : [];
+
+  const players = await prisma.player.findMany({
+    where: {
+      ...(scopedPreferredPlayerIds.length > 0
+        ? {
+            id: {
+              in: scopedPreferredPlayerIds,
+            },
+          }
+        : {
+            team: {
+              region: {
+                in: targetRegions,
+              },
+            },
           }),
     },
-    include: {
-      team: true,
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      teamId: true,
+      updatedAt: true,
+      team: {
+        select: {
+          id: true,
+          name: true,
+          shortName: true,
+          region: true,
+        },
+      },
       rankAccounts: {
         where: {
           status: {
             not: 'ARCHIVED',
           },
         },
+        select: {
+          id: true,
+          platform: true,
+          regionGroup: true,
+          gameName: true,
+          tagLine: true,
+          puuid: true,
+          summonerId: true,
+          source: true,
+          notes: true,
+          isPrimary: true,
+          isActiveCandidate: true,
+          confidence: true,
+          status: true,
+          updatedAt: true,
+          lastVerifiedAt: true,
+          lastSeenAt: true,
+        },
       },
     },
     orderBy: [{ team: { region: 'asc' } }, { team: { shortName: 'asc' } }, { name: 'asc' }],
   });
 
-  const scopedPlayers = filterPlayersByCurrentSeasonRankEffectiveScope(players, effectiveScope);
-  const targetPlayerNames = new Set(
-    (options?.playerNames || []).map((item) => normalizeUnicodeText(String(item || ''))).filter(Boolean),
+  const rescanCandidates = options?.forceRescan
+    ? players
+    : players.filter((player) => player.rankAccounts.length === 0 || archivedPlayerIds.has(player.id));
+  const scopedPlayers = filterPlayersByCurrentSeasonRankEffectiveScope(rescanCandidates, effectiveScope);
+  const explicitlyRequestedPlayers =
+    targetPlayerNames.size === 0
+      ? []
+      : rescanCandidates.filter(
+          (player) =>
+            !isPlaceholderPlayerName(player.name) && targetPlayerNames.has(normalizeUnicodeText(player.name)),
+        );
+  const importablePlayers = Array.from(
+    new Map(
+      [...scopedPlayers, ...explicitlyRequestedPlayers]
+        .filter((player) => !isPlaceholderPlayerName(player.name))
+        .filter((player) => targetPlayerNames.size === 0 || targetPlayerNames.has(normalizeUnicodeText(player.name)))
+        .map((player) => [player.id, player]),
+    ).values(),
   );
-  const importablePlayers = scopedPlayers
-    .filter((player) => !isPlaceholderPlayerName(player.name))
-    .filter((player) => targetPlayerNames.size === 0 || targetPlayerNames.has(normalizeUnicodeText(player.name)));
 
   const dedupedPlayers = Array.from(
     importablePlayers.reduce((map, player) => {
@@ -3292,16 +4119,19 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
         seedPlayerName: seed?.playerName,
         seedPlayerNames: seeds.map((item) => item.playerName),
         nameVariants: siblingNameVariants,
+        deepSearch: options?.deepSearch,
       });
       const seedAccounts = seeds.flatMap((matchedSeed) =>
         (matchedSeed.accounts || []).map((account) => ({
-        ...account,
+          ...account,
+          summonerId: null,
           sourceHint: 'SEED' as const,
           note: account.note || `内置职业种子：${account.platformLabel} / ${account.gameName}#${account.tagLine}`,
         })),
       );
       const localPriorityCandidateAccounts = localPriorityAccounts.map((account) => ({
         ...account,
+        summonerId: null,
         sourceHint: 'SEED' as const,
         note: account.note || `本地优先自动导入：${account.platformLabel} / ${account.gameName}#${account.tagLine}`,
       }));
@@ -3322,12 +4152,19 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
         ...equivalentExistingAccounts,
         ...sourceUrlAccounts.trackingAccounts,
         ...sourceUrlAccounts.dpmAccounts,
+        ...discoveredAccounts.scoreggAccounts,
         ...discoveredAccounts.trackingAccounts,
         ...discoveredAccounts.opggAccounts,
         ...discoveredAccounts.dpmAccounts,
         ...discoveredAccounts.leaguepediaAccounts,
       ];
       const candidateAccounts = pickPreferredAutoImportAccounts(mergedAccounts);
+      const sourceBreakdown = buildAutoImportSourceBreakdown({
+        searchPlan,
+        candidateAccounts,
+        discoveredAccounts,
+        sourceUrlAccounts,
+      });
       const usedSources = Array.from(
         new Set(
           candidateAccounts
@@ -3347,6 +4184,13 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
         null;
 
       if (candidateAccounts.length === 0) {
+        const errorSummary = Array.from(
+          new Set(
+            [...discoveredAccounts.errors, ...sourceUrlAccounts.errors]
+              .map((item) => String(item || '').trim())
+              .filter(Boolean),
+          ),
+        );
         return {
           playerId: player.id,
           playerName: player.name,
@@ -3356,12 +4200,13 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
           created: 0,
           updated: 0,
           skipped: 0,
+          sourceBreakdown,
           message:
             (mergedAccounts.length > 0
               ? '自动发现到了账号，但未找到可用于当前同步链路的有效官方平台账号。'
               : '') ||
-            discoveredAccounts.errors[0] ||
-            '未能从内置种子、TrackingThePros、OP.GG、Leaguepedia 或 DPM 自动发现该选手的 SoloQ 账号',
+            (errorSummary.length > 0 ? `公开源未命中：${errorSummary.join('；')}` : '') ||
+            '未能从内置种子、TrackingThePros、ScoreGG、OP.GG、Leaguepedia 或 DPM 自动发现该选手的 SoloQ 账号',
         };
       }
 
@@ -3373,6 +4218,9 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
       const hasExistingActive = canonicalPlayer.rankAccounts.some((account) => account.isActiveCandidate);
 
       for (const [index, account] of candidateAccounts.entries()) {
+        const supportsImmediatePromotion = supportsImmediateRankPromotion({
+          tagLine: account.tagLine,
+        });
         const importResult = await upsertAutoDiscoveredAccount({
           playerId: canonicalPlayer.id,
           teamId: canonicalPlayer.teamId,
@@ -3380,6 +4228,7 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
           regionGroup: account.regionGroup,
           gameName: account.gameName,
           tagLine: account.tagLine,
+          summonerId: account.summonerId,
           source: sourceLabel,
           confidence: buildAutoImportConfidence(
             account.platformLabel,
@@ -3390,8 +4239,9 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
               .map((item) => item.trim())
               .filter(Boolean).length || 1,
           ),
-          isPrimary: !hasExistingPrimary && index === 0,
-          isActiveCandidate: !hasExistingActive && (account.platformLabel === 'KR' || index === 0),
+          isPrimary: supportsImmediatePromotion && !hasExistingPrimary && index === 0,
+          isActiveCandidate:
+            supportsImmediatePromotion && !hasExistingActive && (account.platformLabel === 'KR' || index === 0),
           notes: `${sourceLabel} 自动发现：${account.sourceUrl || sourceUrl || '无来源链接'}\n保留主号/小号候选，用于持续同步和后续自动提级。`,
           overwriteExisting: options?.overwriteExisting,
           equivalentPlayerIds: equivalentPlayers.siblingIds,
@@ -3404,34 +4254,36 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
 
       equivalentPlayers.siblingIds.forEach((id) => touchedPlayerIds.add(id));
 
-      return {
-        playerId: player.id,
-        playerName: player.name,
+        return {
+          playerId: player.id,
+          playerName: player.name,
+          teamName: player.team.shortName || player.team.name,
+          region: player.team.region,
+          status: created > 0 ? ('created' as const) : updated > 0 ? ('updated' as const) : ('skipped' as const),
+          created,
+          updated,
+          skipped,
+          sourceBreakdown,
+          message: `自动发现 ${candidateAccounts.length} 个候选账号（页面检索 ${searchPlan.pageCandidates.length} 个，广义检索 ${searchPlan.broadCandidates.length} 个，来源：${sourceLabel}${searchPlan.deepSearch ? '，专项深挖已启用' : ''}），新增 ${created} 个，更新 ${updated} 个，跳过 ${skipped} 个。`,
+        };
+      } catch (error) {
+        return {
+          playerId: player.id,
+          playerName: player.name,
         teamName: player.team.shortName || player.team.name,
         region: player.team.region,
-        status: created > 0 ? ('created' as const) : updated > 0 ? ('updated' as const) : ('skipped' as const),
-        created,
-        updated,
-        skipped,
-        message: `自动发现 ${candidateAccounts.length} 个候选账号（页面检索 ${searchPlan.pageCandidates.length} 个，广义检索 ${searchPlan.broadCandidates.length} 个，来源：${sourceLabel}），新增 ${created} 个，更新 ${updated} 个，跳过 ${skipped} 个。`,
-      };
-    } catch (error) {
-      return {
-        playerId: player.id,
-        playerName: player.name,
-        teamName: player.team.shortName || player.team.name,
-        region: player.team.region,
-        status: 'error' as const,
-        created: 0,
-        updated: 0,
-        skipped: 0,
-        message: error instanceof Error ? error.message : '自动发现时发生未知错误',
-      };
-    }
+          status: 'error' as const,
+          created: 0,
+          updated: 0,
+          skipped: 0,
+          sourceBreakdown: [],
+          message: error instanceof Error ? error.message : '自动发现时发生未知错误',
+        };
+      }
   };
 
   const results: Awaited<ReturnType<typeof processPlayer>>[] = [];
-  const batchSize = 12;
+  const batchSize = options?.deepSearch ? 1 : 12;
 
   for (let index = 0; index < limitedPlayers.length; index += batchSize) {
     const batch = limitedPlayers.slice(index, index + batchSize);
@@ -3441,7 +4293,7 @@ async function autoImportLeagueRankAccountsCanonical(options?: {
 
   return {
     success: true,
-    provider: 'seed+tracking+dpm+opgg+leaguepedia',
+    provider: 'seed+tracking+scoregg+dpm+opgg+leaguepedia',
     regions: targetRegions,
     attemptedPlayers: limitedPlayers.length,
     created: results.reduce((total, item) => total + item.created, 0),
@@ -3466,7 +4318,7 @@ export function getRankSyncProviderStatus() {
       key: 'dpm',
       label: '账号自动发现',
       ready: true,
-      detail: '优先使用内置种子、TrackingThePros、DPM 与 OP.GG，Leaguepedia 仅作为严格兜底来源，自动发现 LPL/LCK 选手 SoloQ 账号',
+      detail: '优先使用内置种子、TrackingThePros、ScoreGG 旧版职业账号库、DPM 与 OP.GG，Leaguepedia 仅作为严格兜底来源，自动发现 LPL/LCK 选手 SoloQ 账号',
     },
     {
       key: 'cron',
@@ -3734,6 +4586,31 @@ export async function getRankSyncAdminStatus() {
       ? new Date(lastSyncedAt.getTime() + intervalMinutes * 60 * 1000)
       : null;
   const latestHistory = normalizedHistory[0] || null;
+  const latestSuccessfulHistory = normalizedHistory.find((item) => item.status === 'SUCCESS') || null;
+  const latestHistoryFinishedAt = toDate(latestHistory?.finishedAt || latestHistory?.startedAt || null);
+  const shouldPromoteObservedSuccess =
+    Boolean(lastSyncedAt) &&
+    (!latestHistoryFinishedAt || lastSyncedAt!.getTime() - latestHistoryFinishedAt.getTime() > 60 * 1000);
+  const latestObservedRun =
+    shouldPromoteObservedSuccess && lastSyncedAt
+      ? {
+          id: `observed-${lastSyncedAt.getTime()}`,
+          trigger: latestSuccessfulHistory?.trigger || 'manual',
+          status: 'SUCCESS' as const,
+          startedAt: lastSyncedAt.toISOString(),
+          finishedAt: lastSyncedAt.toISOString(),
+          durationMs: 0,
+          refreshedPlayers: latestSuccessfulHistory?.refreshedPlayers || 0,
+          failedPlayers: latestSuccessfulHistory?.failedPlayers || 0,
+          riotAttempted: latestSuccessfulHistory?.riotAttempted || 0,
+          riotSynced: latestSuccessfulHistory?.riotSynced || 0,
+          autoImportedCreated: latestSuccessfulHistory?.autoImportedCreated || 0,
+          autoImportedUpdated: latestSuccessfulHistory?.autoImportedUpdated || 0,
+          note: '已根据最新缓存时间推断最近一次同步已成功完成。',
+          error: null,
+        }
+      : null;
+  const displayedLatestRun = latestObservedRun || latestHistory;
   const historySuccessCount = normalizedHistory.filter((item) => item.status === 'SUCCESS').length;
   const historyFailureCount = normalizedHistory.filter((item) => item.status === 'FAILED').length;
   const failureEntries = Object.values(failureState);
@@ -3751,7 +4628,9 @@ export async function getRankSyncAdminStatus() {
       nextScheduledAt,
       pendingAccountCount: pendingCount,
       candidateCount: candidatesCount,
-      latestRun: latestHistory,
+      latestRun: displayedLatestRun,
+      latestObservedRun,
+      latestFailureRun: latestHistory?.status === 'FAILED' ? latestHistory : null,
       history: normalizedHistory,
       historySuccessCount,
       historyFailureCount,
@@ -3765,7 +4644,7 @@ export async function getRankSyncAdminStatus() {
   };
 }
 
-async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof syncRankAccountsViaRiot>> | null) {
+export async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof syncRankAccountsViaRiot>> | null) {
   if (!riotResult) {
     return {
       updated: 0,
@@ -3820,16 +4699,17 @@ async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof 
         id: true,
         playerId: true,
         source: true,
-        status: true,
-        confidence: true,
-        isPrimary: true,
-        isActiveCandidate: true,
-        notes: true,
-        gameName: true,
-        tagLine: true,
-        player: {
-          select: {
-            id: true,
+      status: true,
+      confidence: true,
+      isPrimary: true,
+      isActiveCandidate: true,
+      notes: true,
+      gameName: true,
+      tagLine: true,
+      summonerId: true,
+      player: {
+        select: {
+          id: true,
             name: true,
             role: true,
             team: {
@@ -3847,9 +4727,8 @@ async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof 
     if (!account || account.status === 'ARCHIVED') continue;
 
     const isManual = account.source === 'MANUAL';
-    const accountNotes = [account.notes, `同步异常：${category}（连续 ${consecutiveFailures} 次）`]
-      .filter(Boolean)
-      .join('\n');
+    const isSummonerOnlyImportedAccount = Boolean(account.summonerId) && !String(account.tagLine || '').trim();
+    const accountNotes = mergeDistinctNoteText(account.notes, `同步异常：${category}（连续 ${consecutiveFailures} 次）`);
     let preserveLastKnownRealAccount = false;
 
     if (!isManual && !isPlaceholderCoverageAccount(account) && account.player?.team?.region) {
@@ -3861,27 +4740,59 @@ async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof 
         teamShortName: account.player.team.shortName,
         region: account.player.team.region,
       });
-      const alternativeRealAccounts = equivalentPlayers.siblings.flatMap((player) =>
-        (player.rankAccounts || []).filter(
-          (candidate) =>
-            candidate.id !== account.id &&
-            String(candidate.status || '').toUpperCase() !== 'ARCHIVED' &&
-            !isPlaceholderCoverageAccount(candidate),
-        ),
+      const relatedPlayerIds = Array.from(
+        new Set([account.player.id, ...equivalentPlayers.siblings.map((player) => player.id)]),
+      );
+      const relatedActiveAccounts = await prisma.playerRankAccount.findMany({
+        where: {
+          playerId: {
+            in: relatedPlayerIds,
+          },
+          id: {
+            not: account.id,
+          },
+          status: {
+            not: 'ARCHIVED',
+          },
+        },
+        select: {
+          id: true,
+          gameName: true,
+          tagLine: true,
+          puuid: true,
+          summonerId: true,
+          lastMatchAt: true,
+          notes: true,
+        },
+      });
+      const alternativeRealAccounts = relatedActiveAccounts.filter(
+        (candidate) =>
+          !isPlaceholderCoverageAccount(candidate) &&
+          Boolean(candidate.puuid || candidate.summonerId || candidate.lastMatchAt),
       );
       preserveLastKnownRealAccount = alternativeRealAccounts.length === 0;
     }
 
-    if (!isManual && consecutiveFailures >= RANK_SYNC_FAILURE_ARCHIVE_THRESHOLD && !preserveLastKnownRealAccount) {
+    const shouldArchiveImmediately =
+      !isManual && !preserveLastKnownRealAccount && category === 'invalid_mapping' && isSummonerOnlyImportedAccount;
+
+    if (
+      !isManual &&
+      !preserveLastKnownRealAccount &&
+      (shouldArchiveImmediately || consecutiveFailures >= RANK_SYNC_FAILURE_ARCHIVE_THRESHOLD)
+    ) {
       await prisma.playerRankAccount.update({
         where: { id: result.accountId },
         data: {
           status: 'ARCHIVED',
           isPrimary: false,
           isActiveCandidate: false,
-          notes: [accountNotes, '系统自动归档：连续多次同步失败，等待更可靠来源重新发现。']
-            .filter(Boolean)
-            .join('\n'),
+          notes: mergeDistinctNoteText(
+            accountNotes,
+            shouldArchiveImmediately
+              ? '系统自动归档：仅依赖 summonerId 的导入账号首次同步即失效，已等待更可靠来源重新发现。'
+              : '系统自动归档：连续多次同步失败，等待更可靠来源重新发现。',
+          ),
         },
       });
       archived += 1;
@@ -3896,14 +4807,12 @@ async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof 
         data: {
           status: isManual ? 'SUSPECT' : account.status === 'ACTIVE' ? 'SUSPECT' : account.status,
           confidence: downgradedConfidence,
-          notes: [
+          notes: mergeDistinctNoteText(
             accountNotes,
             preserveLastKnownRealAccount
               ? '系统自动保留：该账号仍是当前同身份最后一个已知真号，已降权但不直接归档。'
               : '系统自动降权：连续同步失败，已降为自动补齐等待后续恢复。',
-          ]
-            .filter(Boolean)
-            .join('\n'),
+          ),
         },
       });
       downgraded += 1;
@@ -3925,13 +4834,22 @@ async function applyRankSyncFailurePolicy(riotResult: Awaited<ReturnType<typeof 
 async function getScheduledRankSyncPlayerIds(limit?: number, effectiveScope?: CurrentSeasonRankEffectiveScope) {
   const scopedEffectiveScope = effectiveScope || (await getCurrentSeasonRankEffectiveScope());
   const targetRegions = scopedEffectiveScope.regions.length ? scopedEffectiveScope.regions : [...AUTO_IMPORT_REGIONS];
+  const scopedPreferredPlayerIds = scopedEffectiveScope.preferredPlayerIds || [];
   const players = await prisma.player.findMany({
     where: {
-      team: {
-        region: {
-          in: targetRegions,
-        },
-      },
+      ...(scopedPreferredPlayerIds.length > 0
+        ? {
+            id: {
+              in: scopedPreferredPlayerIds,
+            },
+          }
+        : {
+            team: {
+              region: {
+                in: targetRegions,
+              },
+            },
+          }),
       rankAccounts: {
         some: {
           status: {
@@ -4036,7 +4954,8 @@ async function autoResolveManagedRankCandidates() {
     const source = String(account.source || '').toUpperCase();
     const hasResolvableIdentity =
       !isPlaceholderRankAccountName(account.gameName) &&
-      Boolean(account.tagLine) &&
+      (Boolean(account.tagLine) ||
+        Boolean(account.summonerId)) &&
       (Boolean(account.summonerId) ||
         !isManualPuuid(account.puuid) ||
         (source === 'SEED' && Boolean(account.tagLine)));
@@ -4044,7 +4963,7 @@ async function autoResolveManagedRankCandidates() {
       toNumber(summary?.games7d) > 0 ||
       toNumber(summary?.games14d) > 0 ||
       (String(snapshot?.tier || '').toUpperCase() !== 'UNRANKED' && Boolean(snapshot?.tier));
-    const isSystemManagedSource = ['SEED', 'MIXED', 'OPGG', 'DPM', 'LEAGUEPEDIA'].includes(source);
+    const isSystemManagedSource = ['SEED', 'MIXED', 'OPGG', 'DPM', 'LEAGUEPEDIA', 'SCOREGG'].includes(source);
     const isPrimaryLike = account.isPrimary || account.isActiveCandidate;
     const shouldPromote =
       isSystemManagedSource &&
@@ -4064,9 +4983,7 @@ async function autoResolveManagedRankCandidates() {
         status: 'ACTIVE',
         confidence: Math.max(score, 0.9),
         lastVerifiedAt: new Date(),
-        notes: [account.notes, '系统自动提升为已确认：已具备真实账号标识与可用同步数据。']
-          .filter(Boolean)
-          .join('\n'),
+        notes: mergeDistinctNoteText(account.notes, '系统自动提升为已确认：已具备真实账号标识与可用同步数据。'),
       },
     });
     touchedPlayerIds.add(account.playerId);
@@ -4234,9 +5151,9 @@ export async function createRankAccount(input: {
   platform: string;
   regionGroup?: string;
   gameName: string;
-  tagLine?: string;
+  tagLine?: string | null;
   puuid?: string;
-  summonerId?: string;
+  summonerId?: string | null;
   isPrimary?: boolean;
   isActiveCandidate?: boolean;
   status?: string;
@@ -4253,14 +5170,21 @@ export async function createRankAccount(input: {
     throw new Error('Player not found');
   }
 
-  if (input.isPrimary) {
+  const supportsImmediatePromotion = supportsImmediateRankPromotion({
+    tagLine: input.tagLine,
+    puuid: input.puuid,
+  });
+  const normalizedIsPrimary = supportsImmediatePromotion && Boolean(input.isPrimary);
+  const normalizedIsActiveCandidate = supportsImmediatePromotion && Boolean(input.isActiveCandidate);
+
+  if (normalizedIsPrimary) {
     await prisma.playerRankAccount.updateMany({
       where: { playerId: player.id },
       data: { isPrimary: false },
     });
   }
 
-  if (input.isActiveCandidate) {
+  if (normalizedIsActiveCandidate) {
     await prisma.playerRankAccount.updateMany({
       where: { playerId: player.id },
       data: { isActiveCandidate: false },
@@ -4270,6 +5194,8 @@ export async function createRankAccount(input: {
   const desiredPuuid =
     input.puuid && input.puuid.trim()
       ? input.puuid.trim()
+      : input.summonerId && input.summonerId.trim()
+        ? `manual:summoner:${normalizeText(input.platform || 'kr')}:${normalizeText(input.summonerId)}`
       : buildManualPuuid({
           playerId: player.id,
           platform: input.platform,
@@ -4285,6 +5211,8 @@ export async function createRankAccount(input: {
         playerId: true,
         confidence: true,
         notes: true,
+        tagLine: true,
+        puuid: true,
         isPrimary: true,
         isActiveCandidate: true,
         lastVerifiedAt: true,
@@ -4296,12 +5224,18 @@ export async function createRankAccount(input: {
     playerId: string;
     confidence: number | null;
     notes: string | null;
+    tagLine: string | null;
+    puuid?: string | null;
     isPrimary: boolean;
     isActiveCandidate: boolean;
     lastVerifiedAt: Date | null;
   }) => {
     const previousPlayerId = existingByPuuid.playerId;
-    const mergedNotes = [existingByPuuid.notes, input.notes || null].filter(Boolean).join('\n');
+    const mergedNotes = mergeDistinctNoteText(existingByPuuid.notes, input.notes || null);
+    const existingSupportsImmediatePromotion = supportsImmediateRankPromotion({
+      tagLine: existingByPuuid.tagLine,
+      puuid: existingByPuuid.puuid,
+    });
 
     const updated = await prisma.playerRankAccount.update({
       where: { id: existingByPuuid.id },
@@ -4314,8 +5248,9 @@ export async function createRankAccount(input: {
         tagLine: input.tagLine || null,
         puuid: desiredPuuid,
         summonerId: input.summonerId || null,
-        isPrimary: Boolean(input.isPrimary) || existingByPuuid.isPrimary,
-        isActiveCandidate: Boolean(input.isActiveCandidate) || existingByPuuid.isActiveCandidate,
+        isPrimary: normalizedIsPrimary || (existingByPuuid.isPrimary && existingSupportsImmediatePromotion),
+        isActiveCandidate:
+          normalizedIsActiveCandidate || (existingByPuuid.isActiveCandidate && existingSupportsImmediatePromotion),
         status: input.status || 'SUSPECT',
         source: input.source || 'MANUAL',
         confidence: Math.max(input.confidence ?? 0.6, toNumber(existingByPuuid.confidence)),
@@ -4353,8 +5288,8 @@ export async function createRankAccount(input: {
         tagLine: input.tagLine || null,
         puuid: desiredPuuid,
         summonerId: input.summonerId || null,
-        isPrimary: Boolean(input.isPrimary),
-        isActiveCandidate: Boolean(input.isActiveCandidate),
+        isPrimary: normalizedIsPrimary,
+        isActiveCandidate: normalizedIsActiveCandidate,
         status: input.status || 'SUSPECT',
         source: input.source || 'MANUAL',
         confidence: input.confidence ?? 0.6,
@@ -4400,21 +5335,32 @@ export async function updateRankAccount(
 ) {
   const existing = await prisma.playerRankAccount.findUnique({
     where: { id: accountId },
-    select: { id: true, playerId: true },
+    select: { id: true, playerId: true, tagLine: true, puuid: true },
   });
 
   if (!existing) {
     throw new Error('Account not found');
   }
 
-  if (input.isPrimary) {
+  const effectiveTagLine = input.tagLine !== undefined ? input.tagLine : existing.tagLine;
+  const effectivePuuid = input.puuid !== undefined ? input.puuid : existing.puuid;
+  const supportsImmediatePromotion = supportsImmediateRankPromotion({
+    tagLine: effectiveTagLine,
+    puuid: effectivePuuid,
+  });
+  const normalizedIsPrimary =
+    input.isPrimary !== undefined ? supportsImmediatePromotion && Boolean(input.isPrimary) : undefined;
+  const normalizedIsActiveCandidate =
+    input.isActiveCandidate !== undefined ? supportsImmediatePromotion && Boolean(input.isActiveCandidate) : undefined;
+
+  if (normalizedIsPrimary) {
     await prisma.playerRankAccount.updateMany({
       where: { playerId: existing.playerId, id: { not: accountId } },
       data: { isPrimary: false },
     });
   }
 
-  if (input.isActiveCandidate) {
+  if (normalizedIsActiveCandidate) {
     await prisma.playerRankAccount.updateMany({
       where: { playerId: existing.playerId, id: { not: accountId } },
       data: { isActiveCandidate: false },
@@ -4430,8 +5376,8 @@ export async function updateRankAccount(
       ...(input.tagLine !== undefined ? { tagLine: input.tagLine } : {}),
       ...(input.puuid !== undefined && input.puuid.trim() ? { puuid: input.puuid.trim() } : {}),
       ...(input.summonerId !== undefined ? { summonerId: input.summonerId } : {}),
-      ...(input.isPrimary !== undefined ? { isPrimary: input.isPrimary } : {}),
-      ...(input.isActiveCandidate !== undefined ? { isActiveCandidate: input.isActiveCandidate } : {}),
+      ...(normalizedIsPrimary !== undefined ? { isPrimary: normalizedIsPrimary } : {}),
+      ...(normalizedIsActiveCandidate !== undefined ? { isActiveCandidate: normalizedIsActiveCandidate } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
       ...(input.source !== undefined ? { source: input.source } : {}),
       ...(input.confidence !== undefined ? { confidence: input.confidence } : {}),
@@ -4698,14 +5644,23 @@ export async function ensurePlaceholderRankCoverage(options?: {
   );
   const effectiveScope =
     options?.effectiveScope || (await getCurrentSeasonRankEffectiveScope({ regions: targetRegions }));
+  const scopedPreferredPlayerIds = effectiveScope.preferredPlayerIds || [];
 
   const players = await prisma.player.findMany({
     where: {
-      team: {
-        region: {
-          in: targetRegions,
-        },
-      },
+      ...(scopedPreferredPlayerIds.length > 0
+        ? {
+            id: {
+              in: scopedPreferredPlayerIds,
+            },
+          }
+        : {
+            team: {
+              region: {
+                in: targetRegions,
+              },
+            },
+          }),
     },
     include: {
       team: true,
@@ -4729,6 +5684,8 @@ export async function ensurePlaceholderRankCoverage(options?: {
       region: player.team?.region || '',
       playerName: player.name,
       role: player.role,
+      teamShortName: player.team?.shortName,
+      teamName: player.team?.name,
     });
     const existingGroup = groupedPlayers.get(identityKey) || [];
     existingGroup.push(player);
@@ -4751,6 +5708,19 @@ export async function ensurePlaceholderRankCoverage(options?: {
     const player = candidatePlayers[0];
     if (!player) continue;
     if (isPlaceholderPlayerName(player.name)) continue;
+
+    const equivalentPlayers = await getEquivalentPlayersForAutoImport({
+      playerId: player.id,
+      playerName: player.name,
+      role: player.role,
+      teamName: player.team?.name || '',
+      teamShortName: player.team?.shortName || null,
+      region: player.team?.region || '',
+    });
+    const hasSiblingRealAccount = equivalentPlayers.siblings.some((sibling) =>
+      (sibling.rankAccounts || []).some((account) => !isPlaceholderCoverageAccount(account)),
+    );
+    if (hasSiblingRealAccount) continue;
 
     const placeholderPlatform = String(player.team?.region || '').trim().toUpperCase() === 'LCK' ? 'KR' : 'KR';
     const placeholderTag = normalizeText(player.name || 'pending') || 'pending';
@@ -4804,10 +5774,12 @@ function normalizeAutoImportLookup(value: string) {
 function isMalformedAutoImportedAccount(account: {
   gameName: string;
   tagLine: string | null;
+  summonerId?: string | null;
 }) {
   const gameName = String(account.gameName || '').trim();
   const tagLine = String(account.tagLine || '').trim();
-  if (!gameName || !tagLine) return true;
+  const summonerId = String(account.summonerId || '').trim();
+  if (!gameName || (!tagLine && !summonerId)) return true;
   if (gameName.length > 24 || tagLine.length > 12) return true;
   if (/[<>{}\[\]]/g.test(gameName)) return true;
   if (gameName.includes("'''") || gameName.includes('<br')) return true;
@@ -4844,6 +5816,18 @@ function isSourceUrlMismatched(account: {
   }
 }
 
+function hasRecoverableAutoImportIdentity(account: {
+  puuid?: string | null;
+  summonerId: string | null;
+  lastMatchAt: Date | null;
+}) {
+  return Boolean(
+    (account.puuid && !String(account.puuid).startsWith('manual:')) ||
+      account.lastMatchAt ||
+      account.summonerId,
+  );
+}
+
 function shouldArchiveLowQualityAutoImportedAccount(account: {
   player: { team: { region: string }; name: string };
   platform: string;
@@ -4858,9 +5842,11 @@ function shouldArchiveLowQualityAutoImportedAccount(account: {
   if (!['LPL', 'LCK'].includes(String(account.player.team.region || '').toUpperCase())) return false;
   if (!['MIXED', 'DPM', 'LEAGUEPEDIA', 'OPGG'].includes(String(account.source || '').toUpperCase())) return false;
 
-  if (String(account.platform || '').toUpperCase() !== 'KR') return true;
-  if (account.summonerId || account.lastMatchAt) return false;
-  if (account.puuid && !String(account.puuid).startsWith('manual:')) return false;
+  const hasRecoverableIdentity = hasRecoverableAutoImportIdentity(account);
+  if (String(account.platform || '').toUpperCase() !== 'KR') {
+    return !hasRecoverableIdentity;
+  }
+  if (hasRecoverableIdentity) return false;
 
   if (isMalformedAutoImportedAccount(account)) return true;
   if (isSourceUrlMismatched(account)) return true;
@@ -4885,18 +5871,6 @@ async function reactivateRecoverableArchivedAccounts() {
       notes: {
         contains: '自动归档：低质量自动发现账号',
       },
-      OR: [
-        {
-          lastMatchAt: {
-            not: null,
-          },
-        },
-        {
-          summonerId: {
-            not: null,
-          },
-        },
-      ],
     },
     include: {
       player: {
@@ -4911,7 +5885,7 @@ async function reactivateRecoverableArchivedAccounts() {
   const revivedIds: string[] = [];
 
   for (const account of recoverable) {
-    const hasRecoverableIdentity = (account.puuid && !String(account.puuid).startsWith('manual:')) || account.lastMatchAt || account.summonerId;
+    const hasRecoverableIdentity = hasRecoverableAutoImportIdentity(account);
     if (!hasRecoverableIdentity) continue;
     if (isMalformedAutoImportedAccount(account)) continue;
     if (isSourceUrlMismatched(account)) continue;
@@ -4922,9 +5896,7 @@ async function reactivateRecoverableArchivedAccounts() {
         status: 'ACTIVE',
         isActiveCandidate: true,
         confidence: Math.max(toNumber(account.confidence), 0.9),
-        notes: [account.notes, '自动恢复：已检测到有效同步痕迹，重新纳入自动同步链路。']
-          .filter(Boolean)
-          .join('\n'),
+        notes: mergeDistinctNoteText(account.notes, '自动恢复：已检测到有效同步痕迹，重新纳入自动同步链路。'),
         lastVerifiedAt: new Date(),
       },
     });
@@ -4970,7 +5942,7 @@ export async function archiveLowQualityAutoImportedAccounts() {
         status: 'ARCHIVED',
         isPrimary: false,
         isActiveCandidate: false,
-        notes: [account.notes, '自动归档：低质量自动发现账号，等待更可靠来源重新绑定。'].filter(Boolean).join('\n'),
+        notes: mergeDistinctNoteText(account.notes, '自动归档：低质量自动发现账号，等待更可靠来源重新绑定。'),
       },
     });
     touchedPlayerIds.add(account.playerId);
@@ -4998,16 +5970,6 @@ export async function archiveDuplicateRankAccounts() {
       player: {
         include: {
           team: true,
-          rankProfileCache: true,
-          rankRecentSummaries: true,
-          rankSnapshots: true,
-          rankAccounts: {
-            where: {
-              status: {
-                not: 'ARCHIVED',
-              },
-            },
-          },
         },
       },
     },
@@ -5016,6 +5978,7 @@ export async function archiveDuplicateRankAccounts() {
 
   const grouped = new Map<string, typeof accounts>();
   for (const account of accounts) {
+    if (isPlaceholderCoverageAccount(account)) continue;
     const key = buildRankAccountIdentityKey(account);
     const list = grouped.get(key) || [];
     list.push(account);
@@ -5032,10 +5995,10 @@ export async function archiveDuplicateRankAccounts() {
       (account.isPrimary ? 1000 : 0) +
       (account.isActiveCandidate ? 500 : 0) +
       toNumber(account.confidence) * 100 +
-      scoreAutoImportPlayer(player) +
-      (player.rankProfileCache ? 2000 : 0) +
-      player.rankRecentSummaries.length * 200 +
-      player.rankSnapshots.length * 50 +
+      (String(account.source || '').toUpperCase() === 'SEED' ? 120 : 0) +
+      (String(account.source || '').toUpperCase() === 'MIXED' ? 80 : 0) +
+      (String(account.status || '').toUpperCase() === 'ACTIVE' ? 40 : 0) +
+      (String(account.puuid || '').startsWith('manual:') ? -250 : 80) +
       new Date(account.updatedAt).getTime() / 1000000000
     );
   };
@@ -5049,9 +6012,10 @@ export async function archiveDuplicateRankAccounts() {
           status: 'ARCHIVED',
           isPrimary: false,
           isActiveCandidate: false,
-          notes: [account.notes, `自动归档：重复账号，保留 ${keep.gameName}#${keep.tagLine || ''}（${keep.player.name} / ${keep.player.team.shortName || keep.player.team.name}）`]
-            .filter(Boolean)
-            .join('\n'),
+          notes: mergeDistinctNoteText(
+            account.notes,
+            `自动归档：重复账号，保留 ${keep.gameName}#${keep.tagLine || ''}（${keep.player.name} / ${keep.player.team.shortName || keep.player.team.name}）`,
+          ),
         },
       });
       archivedIds.push(account.id);
@@ -5075,36 +6039,53 @@ export async function archiveDuplicateRankAccounts() {
 function isPlaceholderCoverageAccount(account: {
   gameName?: string | null;
   tagLine?: string | null;
+  summonerId?: string | null;
   puuid?: string | null;
   notes?: string | null;
 }) {
-  const gameName = String(account.gameName || '').trim();
+  const gameName = normalizeRankTextIfNeeded(String(account.gameName || '').trim());
   const tagLine = String(account.tagLine || '').trim();
+  const summonerId = String(account.summonerId || '').trim();
   const puuid = String(account.puuid || '').trim();
-  const notes = String(account.notes || '').trim();
+  const notes = normalizeRankTextIfNeeded(String(account.notes || '').trim());
 
   return (
-    !tagLine ||
+    (!tagLine && !summonerId) ||
     gameName === '待确认映射' ||
-    (puuid.startsWith('manual:') && /(待确认|占位|placeholder)/i.test(`${gameName}\n${notes}`))
+    gameName === '自动补齐映射' ||
+    (puuid.startsWith('manual:') && /(待确认|占位|placeholder|pending|manual)/i.test(`${gameName}\n${notes}`))
   );
 }
 
-export async function archivePlaceholderAccountsWithRealEquivalent(options?: { regions?: string[] }) {
+export async function archivePlaceholderAccountsWithRealEquivalent(options?: {
+  regions?: string[];
+  effectiveScope?: CurrentSeasonRankEffectiveScope;
+}) {
   const targetRegions = (options?.regions?.length ? options.regions : ['LPL', 'LCK']).map((item) =>
     String(item || '').trim().toUpperCase(),
   );
+  const effectiveScope =
+    options?.effectiveScope || (await getCurrentSeasonRankEffectiveScope({ regions: targetRegions }));
+  const scopedPreferredPlayerIds = effectiveScope.preferredPlayerIds || [];
   const accounts = await prisma.playerRankAccount.findMany({
     where: {
       status: {
         not: 'ARCHIVED',
       },
       player: {
-        team: {
-          region: {
-            in: targetRegions,
-          },
-        },
+        ...(scopedPreferredPlayerIds.length > 0
+          ? {
+              id: {
+                in: scopedPreferredPlayerIds,
+              },
+            }
+          : {
+              team: {
+                region: {
+                  in: targetRegions,
+                },
+              },
+            }),
       },
     },
     include: {
@@ -5155,12 +6136,10 @@ export async function archivePlaceholderAccountsWithRealEquivalent(options?: { r
           status: 'ARCHIVED',
           isPrimary: false,
           isActiveCandidate: false,
-          notes: [
+          notes: mergeDistinctNoteText(
             account.notes,
             `自动归档：同身份已存在可验证真号，保留 ${keep.gameName}#${keep.tagLine || ''}（${keep.player.name} / ${keep.player.team.shortName || keep.player.team.name}）`,
-          ]
-            .filter(Boolean)
-            .join('\n'),
+          ),
         },
       });
       archivedIds.push(account.id);
@@ -5180,7 +6159,7 @@ export async function archivePlaceholderAccountsWithRealEquivalent(options?: { r
   };
 }
 
-async function consolidateEquivalentPlayerRankAccounts(options?: {
+export async function consolidateEquivalentPlayerRankAccounts(options?: {
   regions?: string[];
   effectiveScope?: CurrentSeasonRankEffectiveScope;
 }) {
@@ -5218,6 +6197,8 @@ async function consolidateEquivalentPlayerRankAccounts(options?: {
       region: player.team?.region || '',
       playerName: player.name,
       role: player.role,
+      teamShortName: player.team?.shortName,
+      teamName: player.team?.name,
     });
     const list = grouped.get(key) || [];
     list.push(player);
@@ -5257,12 +6238,10 @@ async function consolidateEquivalentPlayerRankAccounts(options?: {
               status: 'ARCHIVED',
               isPrimary: false,
               isActiveCandidate: false,
-              notes: [
+              notes: mergeDistinctNoteText(
                 account.notes,
                 `自动归档：同身份规范记录已保留该真实账号（${canonical.name} / ${canonical.team?.shortName || canonical.team?.name || '--'}）`,
-              ]
-                .filter(Boolean)
-                .join('\n'),
+              ),
             },
           });
           archived += 1;
@@ -5272,17 +6251,15 @@ async function consolidateEquivalentPlayerRankAccounts(options?: {
 
         await prisma.playerRankAccount.update({
           where: { id: account.id },
-          data: {
-            playerId: canonical.id,
-            teamId: canonical.teamId,
-            notes: [
-              account.notes,
-              `自动并回规范记录：${canonical.name} / ${canonical.team?.shortName || canonical.team?.name || '--'}`,
-            ]
-              .filter(Boolean)
-            .join('\n'),
-          },
-        });
+        data: {
+          playerId: canonical.id,
+          teamId: canonical.teamId,
+          notes: mergeDistinctNoteText(
+            account.notes,
+            `自动并回规范记录：${canonical.name} / ${canonical.team?.shortName || canonical.team?.name || '--'}`,
+          ),
+        },
+      });
         await prisma.playerRankRecentSummary.updateMany({
           where: { accountId: account.id },
           data: {
@@ -5325,7 +6302,8 @@ export async function runRankSyncSkeleton(options?: { limit?: number; trigger?: 
   const startedAtIso = new Date(startedAt).toISOString();
   const providers = getRankSyncProviderStatus();
   const riotReady = providers.statuses.some((item) => item.key === 'riot' && item.ready);
-  const effectiveScope = await getCurrentSeasonRankEffectiveScope({ regions: ['LPL', 'LCK'] });
+  clearCurrentSeasonRankEffectiveScopeCache(['LPL', 'LCK']);
+  const effectiveScope = await getCurrentSeasonRankEffectiveScope({ regions: ['LPL', 'LCK'], forceFresh: true });
   const recovery = await reactivateRecoverableArchivedAccounts();
   const lowQualityCleanup = await archiveLowQualityAutoImportedAccounts();
   const duplicateCleanup = await archiveDuplicateRankAccounts();
@@ -5339,8 +6317,13 @@ export async function runRankSyncSkeleton(options?: { limit?: number; trigger?: 
     regions: ['LPL', 'LCK'],
     effectiveScope,
   });
-  const placeholderEquivalentCleanup = await archivePlaceholderAccountsWithRealEquivalent({ regions: ['LPL', 'LCK'] });
-  const scheduledSyncPlayerIds = riotReady ? await getScheduledRankSyncPlayerIds(options?.limit, effectiveScope) : [];
+  const placeholderEquivalentCleanup = await archivePlaceholderAccountsWithRealEquivalent({
+    regions: ['LPL', 'LCK'],
+    effectiveScope,
+  });
+  const scheduledSyncPlayerIds = riotReady
+    ? await getScheduledRankSyncPlayerIds(options?.limit, effectiveScope)
+    : [];
   const targetedPlayerIds = Array.from(
     new Set([
       ...(autoImport.touchedPlayerIds || []),
@@ -5359,7 +6342,10 @@ export async function runRankSyncSkeleton(options?: { limit?: number; trigger?: 
     : null;
   const failurePolicy = await applyRankSyncFailurePolicy(riotResult);
   const autoResolvedCandidates = await autoResolveManagedRankCandidates();
-  const placeholderCoverage = await ensurePlaceholderRankCoverage({ regions: ['LPL', 'LCK'], effectiveScope });
+  const placeholderCoverage = await ensurePlaceholderRankCoverage({
+    regions: ['LPL', 'LCK'],
+    effectiveScope,
+  });
   const refreshPlayerIds = Array.from(
     new Set([
       ...targetedPlayerIds,

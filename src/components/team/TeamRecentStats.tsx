@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Clock, Swords } from 'lucide-react';
+
+import DockedPopover from '@/components/ui/DockedPopover';
+
 import RecentFormPreview from './RecentFormPreview';
 
 interface TeamRecentStatsProps {
@@ -38,10 +41,8 @@ export default function TeamRecentStats({
                         <div className="h-4 w-1 rounded-full bg-gradient-to-b from-blue-400 to-blue-600" />
                         <div>
                             <h3 className="text-base font-bold tracking-wide text-gray-100">
-                                近期表现分析
-                                <span className="ml-1 text-xs font-normal text-gray-500">
-                                    （最近 {matchCount} 个 BO3/BO5 大场）
-                                </span>
+                                近期表现详情
+                                <span className="ml-1 text-xs font-normal text-gray-500">（最近 {matchCount} 个大场）</span>
                             </h3>
                         </div>
                     </div>
@@ -53,9 +54,7 @@ export default function TeamRecentStats({
                             <Clock className="relative z-10 h-8 w-8 text-blue-400" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-blue-400/80">
-                                平均比赛时长
-                            </span>
+                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-blue-400/80">平均比赛时长</span>
                             <div className="flex items-baseline gap-1 text-4xl font-black tracking-tight text-white">
                                 {averageDuration}
                                 <span className="text-sm font-medium text-gray-500">分钟</span>
@@ -68,12 +67,8 @@ export default function TeamRecentStats({
                             <Swords className="relative z-10 h-8 w-8 text-red-400" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-red-400/80">
-                                场均总击杀
-                            </span>
-                            <div className="flex items-baseline gap-1 text-4xl font-black tracking-tight text-white">
-                                {averageKills}
-                            </div>
+                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-red-400/80">场均总击杀</span>
+                            <div className="flex items-baseline gap-1 text-4xl font-black tracking-tight text-white">{averageKills}</div>
                         </div>
                     </div>
 
@@ -82,28 +77,22 @@ export default function TeamRecentStats({
                             <Clock className="relative z-10 h-8 w-8 text-amber-400" strokeWidth={1.5} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-amber-400/80">
-                                10分钟总人头
-                            </span>
-                            <div className="flex items-baseline gap-1 text-4xl font-black tracking-tight text-white">
-                                {averageTenMinKills}
-                            </div>
+                            <span className="mb-0.5 text-xs font-bold uppercase tracking-wider text-amber-400/80">10分钟总人头</span>
+                            <div className="flex items-baseline gap-1 text-4xl font-black tracking-tight text-white">{averageTenMinKills}</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {showPopover && teamId && recentMatches.length > 0 && (
-                <div className="animate-in fade-in slide-in-from-top-2 absolute left-0 top-[calc(100%+8px)] z-[100] duration-200">
-                    <RecentFormPreview
-                        teamId={teamId}
-                        matches={recentMatches}
-                        averageDuration={averageDuration.toString()}
-                        averageKills={averageKills.toString()}
-                        averageTenMinKills={averageTenMinKills.toString()}
-                    />
-                </div>
-            )}
+            <DockedPopover open={showPopover && Boolean(teamId) && recentMatches.length > 0} dock="left" offsetClassName="top-[calc(100%+8px)]">
+                <RecentFormPreview
+                    teamId={teamId || ''}
+                    matches={recentMatches}
+                    averageDuration={String(averageDuration)}
+                    averageKills={String(averageKills)}
+                    averageTenMinKills={String(averageTenMinKills)}
+                />
+            </DockedPopover>
         </div>
     );
 }

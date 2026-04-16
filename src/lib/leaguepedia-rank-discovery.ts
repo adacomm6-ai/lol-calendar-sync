@@ -1,4 +1,6 @@
 ﻿const LEAGUEPEDIA_ENDPOINT = 'https://lol.fandom.com/api.php';
+import { buildRankDiscoveryNameVariants } from '@/lib/rank-discovery-name-variants';
+
 const DIRECTORY_PAGE_SIZE = 500;
 const DIRECTORY_CACHE_TTL_MS = 60 * 60 * 1000;
 const LEAGUEPEDIA_FETCH_TIMEOUT_MS = 10000;
@@ -23,26 +25,6 @@ const PLATFORM_MAP: Record<string, { platform: string; regionGroup: string }> = 
 };
 
 const SUPPORTED_PLATFORM_LABELS = new Set(Object.keys(PLATFORM_MAP));
-
-const DISCOVERY_ALIAS_MAP: Record<string, string[]> = {
-  bdd: ['Bdd'],
-  clozer: ['Clozer'],
-  deokdam: ['Deokdam'],
-  gideon: ['Gideon'],
-  knight: ['Knight'],
-  vicla: ['VicLa'],
-  xiaohu: ['Xiaohu'],
-  xun: ['Xun'],
-  jiejie: ['Jiejie'],
-  junjia: ['JunJia'],
-  missing: ['MISSING'],
-  on: ['ON'],
-  teddy: ['Teddy'],
-  zdz: ['ZDZ'],
-  ycx: ['YCX'],
-  jwei: ['JWEI'],
-  dudu: ['DuDu'],
-};
 
 type LeaguepediaDirectoryRow = {
   id: string;
@@ -82,21 +64,9 @@ function normalizeLookup(value: string) {
 }
 
 function buildDiscoveryNameCandidates(playerName: string) {
-  const trimmed = String(playerName || '').trim();
-  const compact = trimmed.replace(/\s+/g, '');
-  const normalizedKey = compact.toLowerCase();
-  const titleCase = compact ? compact.charAt(0).toUpperCase() + compact.slice(1).toLowerCase() : '';
-  const aliasCandidates = DISCOVERY_ALIAS_MAP[normalizedKey] || [];
-  const strippedPrefixCandidates = [] as string[];
-  const prefixedTitleCase = compact.match(/^([A-Z]{2,5})([A-Z][A-Za-z0-9]{1,24})$/);
-  if (prefixedTitleCase?.[2]) {
-    strippedPrefixCandidates.push(prefixedTitleCase[2]);
-  }
-  const prefixedUpper = compact.match(/^([A-Z]{2,5})([A-Z0-9]{2,24})$/);
-  if (prefixedUpper?.[2] && prefixedUpper[2] !== compact) {
-    strippedPrefixCandidates.push(prefixedUpper[2]);
-  }
-  return Array.from(new Set([trimmed, compact, titleCase, ...strippedPrefixCandidates, ...aliasCandidates].filter(Boolean)));
+  return buildRankDiscoveryNameVariants(playerName, [], {
+    includeSearchAliases: false,
+  });
 }
 
 function decodeHtmlEntities(value: string) {
@@ -265,24 +235,29 @@ async function getLeaguepediaDirectory() {
   return rows;
 }
 
-function scoreDirectoryRow(playerName: string, row: LeaguepediaDirectoryRow) {
-  const target = normalizeLookup(playerName);
+function scoreDirectoryRow(playerNames: string[], row: LeaguepediaDirectoryRow) {
   const idValue = normalizeLookup(row.id);
   const overviewValue = normalizeLookup(row.overviewPage);
 
-  if (!target) return -1;
-  if (idValue === target) return 100;
-  if (overviewValue === target) return 95;
-  if (idValue.startsWith(target) || target.startsWith(idValue)) return 60;
-  if (overviewValue.startsWith(target) || target.startsWith(overviewValue)) return 56;
-  if (idValue.includes(target) || target.includes(idValue)) return 40;
-  if (overviewValue.includes(target) || target.includes(overviewValue)) return 36;
-  return -1;
+  let bestScore = -1;
+  for (const playerName of playerNames) {
+    const target = normalizeLookup(playerName);
+    if (!target) continue;
+    if (idValue === target) bestScore = Math.max(bestScore, 100);
+    else if (overviewValue === target) bestScore = Math.max(bestScore, 95);
+    else if (idValue.startsWith(target) || target.startsWith(idValue)) bestScore = Math.max(bestScore, 60);
+    else if (overviewValue.startsWith(target) || target.startsWith(overviewValue)) bestScore = Math.max(bestScore, 56);
+    else if (idValue.includes(target) || target.includes(idValue)) bestScore = Math.max(bestScore, 40);
+    else if (overviewValue.includes(target) || target.includes(overviewValue)) bestScore = Math.max(bestScore, 36);
+  }
+
+  return bestScore;
 }
 
 function pickDirectoryCandidates(playerName: string, rows: LeaguepediaDirectoryRow[]) {
+  const candidateNames = buildDiscoveryNameCandidates(playerName);
   return rows
-    .map((row) => ({ row, score: scoreDirectoryRow(playerName, row) }))
+    .map((row) => ({ row, score: scoreDirectoryRow(candidateNames, row) }))
     .filter((item) => item.score >= 90)
     .sort((left, right) => right.score - left.score)
     .slice(0, 5)

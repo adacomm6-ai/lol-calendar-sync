@@ -112,3 +112,37 @@ export async function deletePlayer(playerId: string) {
         return { success: false, error: "Database error" };
     }
 }
+
+export async function bulkDeletePlayers(playerIds: string[]) {
+    const normalizedIds = Array.from(new Set((playerIds || []).map((id) => String(id || '').trim()).filter(Boolean)));
+    if (normalizedIds.length === 0) return { success: false, error: "Missing IDs" };
+
+    try {
+        const players = await prisma.player.findMany({
+            where: { id: { in: normalizedIds } },
+            select: { id: true, teamId: true },
+        });
+
+        if (players.length === 0) {
+            return { success: false, error: "Players not found" };
+        }
+
+        const foundIds = players.map((player) => player.id);
+        const teamIds = Array.from(new Set(players.map((player) => player.teamId).filter(Boolean)));
+
+        await prisma.player.deleteMany({
+            where: { id: { in: foundIds } },
+        });
+
+        teamIds.forEach((teamId) => revalidatePath(`/teams/${teamId}`));
+        revalidatePath('/admin/settings');
+
+        return {
+            success: true,
+            deletedIds: foundIds,
+        };
+    } catch (e) {
+        console.error("Failed to bulk delete players:", e);
+        return { success: false, error: "Database error" };
+    }
+}

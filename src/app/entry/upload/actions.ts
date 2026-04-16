@@ -224,6 +224,13 @@ import { prisma } from '@/lib/db';
 import { propagateMatchResult } from '@/lib/bracket-utils';
 import { calculateMatchSeriesScore } from '@/lib/match-series';
 import { upsertPlayersFromStats } from '@/lib/player-utils';
+import {
+    MANUAL_REVIEW_COMMENT_TYPE,
+    deriveManualReviewSummary,
+    normalizeManualReviewType,
+    serializeManualReviewComment,
+    type ManualReviewType,
+} from '@/lib/manual-review-comment';
 
 async function resolveTeam(nameInput: string) {
     const name = nameInput?.trim();
@@ -874,6 +881,155 @@ export async function saveAnalysisNote(formData: FormData) {
     } catch (e) {
         console.error(e);
         return { error: 'failed to save analysis note' };
+    }
+}
+
+export async function saveManualReviewComment(formData: FormData) {
+    const reviewId = String(formData.get('reviewId') || formData.get('commentId') || '').trim() || null;
+    const matchId = String(formData.get('matchId') || '').trim();
+    const gameNumber = Number(formData.get('gameNumber') || 1) || 1;
+    const reviewType = normalizeManualReviewType(String(formData.get('reviewType') || '').trim()) as ManualReviewType;
+    const teamId = String(formData.get('teamId') || '').trim();
+    const teamName = String(formData.get('teamName') || '').trim();
+    const playerId = String(formData.get('playerId') || '').trim();
+    const hero = String(formData.get('hero') || '').trim();
+    const detail = String(formData.get('detail') || '').trim();
+    const summary = String(formData.get('summary') || '').trim() || deriveManualReviewSummary(detail);
+    const matchDate = String(formData.get('matchDate') || '').trim();
+    const opponentTeamName = String(formData.get('opponentTeamName') || '').trim();
+
+    if (!matchId || !teamId || !teamName || !playerId || !hero || !detail || !reviewType) {
+        return { error: '保存手动点评失败：缺少必要字段。' };
+    }
+
+    try {
+        let existingReview = null as Awaited<ReturnType<typeof prisma.manualReview.findFirst>> | null;
+        if (reviewId) {
+            existingReview = await prisma.manualReview.findFirst({
+                where: {
+                    OR: [
+                        { id: reviewId },
+                        { legacyCommentId: reviewId },
+                    ],
+                },
+            });
+        }
+
+        const content = serializeManualReviewComment({
+            reviewType,
+            teamId,
+            teamName,
+            playerId,
+            hero,
+            detail,
+            summary,
+            matchDate,
+            opponentTeamName,
+            gameNumber,
+        });
+
+        let legacyCommentId = existingReview?.legacyCommentId || null;
+        if (!legacyCommentId && reviewId) {
+            const legacyComment = await prisma.comment.findUnique({ where: { id: reviewId } });
+            if (legacyComment?.type === MANUAL_REVIEW_COMMENT_TYPE) {
+                legacyCommentId = legacyComment.id;
+            }
+        }
+
+        if (legacyCommentId) {
+            await prisma.comment.update({
+                where: { id: legacyCommentId },
+                data: {
+                    content,
+                    type: MANUAL_REVIEW_COMMENT_TYPE,
+                    gameNumber,
+                    author: 'Analyst',
+                    userId: null,
+                },
+            });
+        } else {
+            const comment = await prisma.comment.create({
+                data: {
+                    matchId,
+                    content,
+                    author: 'Analyst',
+                    userId: null,
+                    type: MANUAL_REVIEW_COMMENT_TYPE,
+                    gameNumber,
+                } as any,
+            });
+            legacyCommentId = comment.id;
+        }
+
+        const manualReviewData = {
+            matchId,
+            legacyCommentId,
+            gameNumber,
+            reviewType,
+            teamId,
+            teamName,
+            playerId,
+            hero,
+            detail,
+            summary,
+            matchDate,
+            opponentTeamName,
+            author: 'Analyst',
+        };
+
+        if (existingReview) {
+            await prisma.manualReview.update({
+                where: { id: existingReview.id },
+                data: manualReviewData,
+            });
+        } else {
+            await prisma.manualReview.create({
+                data: manualReviewData,
+            });
+        }
+
+        revalidatePath(`/match/${matchId}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to save manual review comment:', error);
+        return { error: '保存手动点评失败。' };
+    }
+}
+
+export async function deleteManualReview(reviewId: string, matchId: string) {
+    try {
+        const review = await prisma.manualReview.findFirst({
+            where: {
+                OR: [
+                    { id: reviewId },
+                    { legacyCommentId: reviewId },
+                ],
+            },
+        });
+
+        if (review) {
+            await prisma.$transaction(async (tx) => {
+                if (review.legacyCommentId) {
+                    await tx.comment.deleteMany({
+                        where: { id: review.legacyCommentId },
+                    });
+                }
+
+                await tx.manualReview.delete({
+                    where: { id: review.id },
+                });
+            });
+        } else {
+            await prisma.comment.delete({
+                where: { id: reviewId },
+            });
+        }
+
+        revalidatePath(`/match/${matchId}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete manual review:', error);
+        return { error: '删除手动点评失败。' };
     }
 }
 

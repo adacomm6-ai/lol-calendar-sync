@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/db';
 import { analyzeMatchHistoryImage } from '@/lib/gemini';
+import { normalizeNameKey, normalizeRole } from '@/lib/player-snapshot';
+import { normalizeTeamLookupKey } from '@/lib/team-alias';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -468,6 +470,115 @@ export async function classifyAllComments() {
 
 import goldenData from '@/lib/roster-golden-data.json';
 
+const GOLDEN_ROSTER_CORRECTIONS: Record<string, { teamName?: string; players: Array<{ name: string; role: string; split: string }> }> = {
+    G2: {
+        teamName: 'G2 Esports',
+        players: [
+            { name: 'BrokenBlade', role: 'TOP', split: '2026 其他第一赛段' },
+            { name: 'SkewMond', role: 'JUNGLE', split: '2026 其他第一赛段' },
+            { name: 'Caps', role: 'MID', split: '2026 其他第一赛段' },
+            { name: 'Hans Sama', role: 'ADC', split: '2026 其他第一赛段' },
+            { name: 'Labrov', role: 'SUPPORT', split: '2026 其他第一赛段' },
+        ],
+    },
+    TSW: {
+        players: [
+            { name: 'Pun', role: 'TOP', split: '2026 其他第一赛段' },
+            { name: 'Hizto', role: 'JUNGLE', split: '2026 其他第一赛段' },
+            { name: 'Dire', role: 'MID', split: '2026 其他第一赛段' },
+            { name: 'Eddie', role: 'ADC', split: '2026 其他第一赛段' },
+            { name: 'Bie', role: 'SUPPORT', split: '2026 其他第一赛段' },
+        ],
+    },
+    LOUD: {
+        players: [
+            { name: 'Xyno', role: 'TOP', split: '2026 其他第一赛段' },
+            { name: 'YoungJae', role: 'JUNGLE', split: '2026 其他第一赛段' },
+            { name: 'Envy', role: 'MID', split: '2026 其他第一赛段' },
+            { name: 'Bull', role: 'ADC', split: '2026 其他第一赛段' },
+            { name: 'RedBert', role: 'SUPPORT', split: '2026 其他第一赛段' },
+        ],
+    },
+};
+
+function buildGoldenTeamKeys(values: Array<string | null | undefined>) {
+    return new Set(
+        values
+            .map((value) => normalizeTeamLookupKey(value))
+            .filter(Boolean),
+    );
+}
+
+async function validateGoldenRosterEntry(teamData: any, resolvedTeamName: string) {
+    const players = Array.isArray(teamData?.players) ? teamData.players : [];
+    const totalPlayers = players.length;
+    const unknownRoleCount = players.filter((player: any) => {
+        const role = normalizeRole(player?.role || 'UNKNOWN');
+        return role === 'UNKNOWN' || role === 'OTHER';
+    }).length;
+    const normalizedNames: string[] = Array.from(
+        new Set(
+            players
+                .map((player: any) => normalizeNameKey(player?.name))
+                .filter((value: string | null): value is string => Boolean(value)),
+        ),
+    );
+
+    if (normalizedNames.length === 0) {
+        return { matched: 0, conflicts: 0, unknown: 0, suspicious: false };
+    }
+
+    const snapshots = await prisma.playerStatSnapshot.findMany({
+        where: {
+            normalizedPlayerName: { in: normalizedNames },
+        },
+        select: {
+            normalizedPlayerName: true,
+            teamName: true,
+            teamShortName: true,
+        },
+    });
+
+    const snapshotsByPlayer = new Map<string, Array<{ teamName: string; teamShortName: string | null }>>();
+    snapshots.forEach((snapshot) => {
+        const list = snapshotsByPlayer.get(snapshot.normalizedPlayerName) || [];
+        list.push({ teamName: snapshot.teamName, teamShortName: snapshot.teamShortName });
+        snapshotsByPlayer.set(snapshot.normalizedPlayerName, list);
+    });
+
+    const teamKeys = buildGoldenTeamKeys([teamData.teamName, resolvedTeamName, teamData.teamId]);
+    let matched = 0;
+    let conflicts = 0;
+    let unknown = 0;
+
+    normalizedNames.forEach((nameKey) => {
+        const candidateSnapshots = snapshotsByPlayer.get(nameKey) || [];
+        if (candidateSnapshots.length === 0) {
+            unknown += 1;
+            return;
+        }
+
+        const hasMatch = candidateSnapshots.some((item) =>
+            teamKeys.has(normalizeTeamLookupKey(item.teamName)) ||
+            teamKeys.has(normalizeTeamLookupKey(item.teamShortName)),
+        );
+
+        if (hasMatch) matched += 1;
+        else conflicts += 1;
+    });
+
+    return {
+        matched,
+        conflicts,
+        unknown,
+        suspicious:
+            unknownRoleCount >= 2 ||
+            (matched === 0 && conflicts > 0) ||
+            conflicts >= Math.max(2, matched + unknown) ||
+            (totalPlayers > 0 && conflicts / totalPlayers >= 0.4),
+    };
+}
+
 export async function applyGoldenRosterFix() {
     const logs: string[] = [];
     try {
@@ -475,7 +586,24 @@ export async function applyGoldenRosterFix() {
         logs.push(`Loaded golden data for ${snapshot.length} teams.`);
 
         for (const teamData of snapshot) {
-            const { teamId, teamName, players } = teamData;
+            const corrected = GOLDEN_ROSTER_CORRECTIONS[teamData.teamId] || null;
+            const teamName = corrected?.teamName || teamData.teamName;
+            const players = (corrected?.players || teamData.players || []).map((player: any) => ({
+                name: String(player?.name || '').trim(),
+                role: normalizeRole(player?.role || 'UNKNOWN'),
+                split: String(player?.split || 'Split 1').trim() || 'Split 1',
+            })).filter((player: any) => player.name);
+            const { teamId } = teamData;
+
+            if (corrected) {
+                logs.push(`[${teamId}] Applied runtime golden roster correction before sync.`);
+            }
+
+            const validation = await validateGoldenRosterEntry({ ...teamData, teamName, players }, teamName);
+            if (validation.suspicious) {
+                logs.push(`[${teamName}] Skipped sync: roster validation detected ${validation.conflicts} conflicting players, matched=${validation.matched}, unknown=${validation.unknown}.`);
+                continue;
+            }
 
             // 1. Fetch current cloud players for this team
             const currentPlayers = await prisma.player.findMany({

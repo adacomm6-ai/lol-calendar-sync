@@ -34,7 +34,8 @@ function resolveYear(region: string, currentYear: string, yearsByRegion: Record<
 function resolveTournament(region: string, year: string, currentTournament: string, tournamentsByRegionYear: Record<string, string[]>) {
   const tournaments = tournamentsByRegionYear[buildYearKey(region, year)] || [];
   if (tournaments.length === 0) return '';
-  return tournaments.includes(currentTournament) ? currentTournament : tournaments[0];
+  const preferredTournament = tournaments.find((item) => item !== '全部') || tournaments[0];
+  return tournaments.includes(currentTournament) ? currentTournament : preferredTournament;
 }
 
 export default function AnalysisFilters({

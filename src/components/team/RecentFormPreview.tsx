@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import Image from 'next/image';
 import { Calendar, Clock, ExternalLink, Swords, Timer } from 'lucide-react';
+
 import { getCompletedSeriesGames } from '@/lib/recent-series-stats';
 import { getTeamShortDisplayName } from '@/lib/team-display';
 
@@ -79,6 +80,14 @@ function getSeriesSummary(games: GameData[]) {
     };
 }
 
+function formatMatchDate(value: string | null) {
+    if (!value) return '未知日期';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '未知日期';
+    return date.toLocaleDateString('zh-CN');
+}
+
 export default function RecentFormPreview({
     teamId,
     matches,
@@ -87,14 +96,14 @@ export default function RecentFormPreview({
     averageTenMinKills = '--',
 }: RecentFormPreviewProps) {
     return (
-        <div className="w-[460px] overflow-hidden rounded-2xl border border-gray-800 bg-[#0f172a] text-white shadow-2xl">
+        <div className="w-[min(460px,calc(100vw-24px))] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-gray-800 bg-[#0f172a] text-white shadow-2xl">
             <div className="border-b border-gray-800 bg-gradient-to-r from-blue-900/20 to-transparent p-4">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex items-center justify-between gap-3">
                     <h4 className="flex items-center gap-2 text-sm font-bold text-blue-400">
                         <div className="h-3 w-1 rounded-full bg-blue-500" />
-                        近期表现详情（最近 {matches.length} 个大场）
+                        {`近期表现详情（最近 ${matches.length} 个大场）`}
                     </h4>
-                    <div className="text-[10px] font-black tracking-widest text-gray-500">均值概览</div>
+                    <div className="shrink-0 text-[10px] font-black tracking-widest text-gray-500">均值概览</div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
@@ -124,7 +133,7 @@ export default function RecentFormPreview({
                 </div>
             </div>
 
-            <div className="space-y-2 p-2">
+            <div className="max-h-[min(68vh,620px)] space-y-2 overflow-y-auto overscroll-contain p-2">
                 {matches.map((match) => {
                     const isWin = match.winnerId === teamId;
                     const opponent = match.teamAId === teamId ? match.teamB : match.teamA;
@@ -144,33 +153,38 @@ export default function RecentFormPreview({
                             key={match.id}
                             className="overflow-hidden rounded-xl border border-white/5 bg-slate-900/40 transition-colors hover:border-white/10"
                         >
-                            <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.02] px-3 py-2">
-                                <div className="flex items-center gap-2">
-                                    <div className={`h-1.5 w-1.5 rounded-full ${isWin ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                                    <span className="max-w-[140px] truncate text-[10px] font-bold text-gray-400">
-                                        {match.tournament}
-                                    </span>
+                            <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-white/[0.02] px-3 py-2">
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${isWin ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                    <span className="truncate text-[10px] font-bold text-gray-400">{match.tournament}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-500">
+                                <div className="flex shrink-0 items-center gap-2 text-gray-500">
                                     <Calendar className="h-3 w-3" />
-                                    <span className="text-[10px] font-medium">
-                                        {match.startTime ? new Date(match.startTime).toLocaleDateString() : '未知日期'}
-                                    </span>
+                                    <span className="text-[10px] font-medium">{formatMatchDate(match.startTime)}</span>
                                 </div>
                             </div>
 
                             <div className="p-3">
-                                <div className="mb-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-lg border border-white/5 bg-slate-800">
-                                            {opponent.logo && <img src={opponent.logo} alt="" className="h-4 w-4 object-contain" />}
+                                <div className="mb-3 flex items-center justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-2">
+                                        <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/5 bg-slate-800">
+                                            {opponent.logo && (
+                                                <Image
+                                                    src={opponent.logo}
+                                                    alt=""
+                                                    width={16}
+                                                    height={16}
+                                                    unoptimized
+                                                    className="h-4 w-4 object-contain"
+                                                />
+                                            )}
                                         </div>
-                                        <span className="text-xs font-black tracking-tight text-gray-200">
-                                            VS {opponentDisplayName}
+                                        <span className="truncate text-xs font-black tracking-tight text-gray-200">
+                                            {`VS ${opponentDisplayName}`}
                                         </span>
                                     </div>
                                     <div
-                                        className={`rounded px-2 py-0.5 text-[10px] font-black tracking-tighter ${
+                                        className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-black tracking-tighter ${
                                             isWin ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
                                         }`}
                                     >
@@ -197,18 +211,19 @@ export default function RecentFormPreview({
                                     {completedGames.map((game) => {
                                         const gameWinner = game.winnerId === teamId;
                                         const tenMinKills = getGameTenMinKills(game);
+
                                         return (
                                             <div
                                                 key={`${match.id}-${game.gameNumber}`}
-                                                className="flex items-center justify-between rounded-lg bg-white/[0.03] px-2 py-1.5 text-[10px]"
+                                                className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.03] px-2 py-1.5 text-[10px]"
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <span className="font-bold text-gray-500">第{game.gameNumber}局</span>
-                                                    <span className={`font-black ${gameWinner ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                <div className="flex min-w-0 items-center gap-3">
+                                                    <span className="shrink-0 font-bold text-gray-500">{`第${game.gameNumber}局`}</span>
+                                                    <span className={`shrink-0 font-black ${gameWinner ? 'text-emerald-400' : 'text-red-400'}`}>
                                                         {gameWinner ? 'W' : 'L'}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-4 text-gray-400">
+                                                <div className="flex shrink-0 items-center gap-3 text-gray-400">
                                                     <div className="flex items-center gap-1">
                                                         <Clock className="h-2.5 w-2.5" />
                                                         <span>{game.duration ? formatDuration(game.duration) : '--'}</span>

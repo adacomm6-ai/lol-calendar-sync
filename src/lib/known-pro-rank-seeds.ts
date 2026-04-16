@@ -254,22 +254,6 @@ export const KNOWN_PRO_RANK_SEEDS: KnownProRankSeed[] = [
   },
   {
     region: 'LCK',
-    teamShortName: 'KT',
-    playerName: 'PerfecT',
-    role: 'TOP',
-    accounts: [
-      {
-        platformLabel: 'KR',
-        platform: 'KR',
-        regionGroup: 'ASIA',
-        gameName: decodeSeedText('%ED%82%B9%EC%BD%A9%EC%B6%9C%ED%98%84'),
-        tagLine: decodeSeedText('%ED%82%B9%EC%BD%A9%ED%82%B9%EC%BD%A9'),
-        sourceUrl: 'https://op.gg/lol/summoners/kr/%ED%82%B9%EC%BD%A9%EC%B6%9C%ED%98%84-%ED%82%B9%EC%BD%A9%ED%82%B9%EC%BD%A9/highlights',
-      },
-    ],
-  },
-  {
-    region: 'LCK',
     teamShortName: 'DK',
     playerName: 'Career',
     role: 'SUP',

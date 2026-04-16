@@ -8,10 +8,14 @@ __pycache__/
 .agent/
 .cache/
 .codex-*.js
+.codex-*.html
 .codex-*.png
 codex-verify-*.html
 tmp/
 tmp_*
+tmp-*.ics
+tmp-*.json
+tmp-*.html
 tmp-*.log
 *.log
 *.pid
@@ -21,6 +25,7 @@ tsconfig.tsbuildinfo
 # Local backups and diagnostics
 backups/
 logs/
+__safety_backups/
 local_start.err
 local_start.out
 local_start_err.log

@@ -71,7 +71,7 @@ async function acquireRankSyncRunLock(): Promise<
   try {
     await fs.unlink(filePath);
   } catch {
-    // Missing or already removed lock files are fine.
+    // ignore
   }
 
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -110,7 +110,7 @@ async function releaseRankSyncRunLock(token: string) {
       await fs.unlink(filePath);
     }
   } catch {
-    // Best effort cleanup.
+    // ignore
   }
 }
 

@@ -6,8 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   return handleCalendarIcsRequest(request, {
-    defaultStatus: 'all',
+    defaultStatus: 'upcoming',
     defaultCalendarName: 'LOL-LPL-LCK',
     defaultRegions: ['LPL', 'LCK'],
+    incrementalExportStateKey: 'iphone-lpl-lck-upcoming',
   });
 }

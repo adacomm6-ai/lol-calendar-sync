@@ -1,3 +1,5 @@
+import { buildRankDiscoveryNameVariants } from '@/lib/rank-discovery-name-variants';
+
 const DPM_BASE_URL = 'https://dpm.lol';
 const DPM_FETCH_TIMEOUT_MS = 8000;
 
@@ -25,26 +27,6 @@ const ACCOUNT_PATTERN =
 
 const UNLABELED_ACCOUNT_PATTERN =
   /(?:(?:\d+\s+(?:minutes?|hours?|days?|weeks?|months?))\s+ago\s+)?([^#\n]+?)#([^\s#]+)\s+(?:(?:[IVX]+)\s*-\s*)?(?:Unranked|\d+\s*LP)\b/giu;
-
-const DISCOVERY_ALIAS_MAP: Record<string, string[]> = {
-  bdd: ['Bdd'],
-  clozer: ['Clozer'],
-  deokdam: ['Deokdam'],
-  gideon: ['Gideon'],
-  knight: ['Knight'],
-  vicla: ['VicLa'],
-  xiaohu: ['Xiaohu'],
-  xun: ['Xun'],
-  jiejie: ['Jiejie'],
-  junjia: ['JunJia'],
-  missing: ['MISSING'],
-  on: ['ON'],
-  teddy: ['Teddy'],
-  zdz: ['ZDZ'],
-  ycx: ['YCX'],
-  jwei: ['JWEI'],
-  dudu: ['DuDu'],
-};
 
 export type DiscoveredProRankAccount = {
   sourceUrl: string;
@@ -95,31 +77,10 @@ function normalizeSection(text: string) {
 }
 
 function normalizePlayerPageCandidates(playerName: string) {
-  const trimmed = String(playerName || '').trim();
-  const compact = trimmed.replace(/\s+/g, '');
-  const normalizedKey = compact.toLowerCase();
-  const titleCase = compact ? compact.charAt(0).toUpperCase() + compact.slice(1).toLowerCase() : '';
-  const aliasCandidates = DISCOVERY_ALIAS_MAP[normalizedKey] || [];
-  const strippedPrefixCandidates = [] as string[];
-  const prefixedTitleCase = compact.match(/^([A-Z]{2,5})([A-Z][A-Za-z0-9]{1,24})$/);
-  if (prefixedTitleCase?.[2]) {
-    strippedPrefixCandidates.push(prefixedTitleCase[2]);
-  }
-  const prefixedUpper = compact.match(/^([A-Z]{2,5})([A-Z0-9]{2,24})$/);
-  if (prefixedUpper?.[2] && prefixedUpper[2] !== compact) {
-    strippedPrefixCandidates.push(prefixedUpper[2]);
-  }
-  const candidates = [
-    trimmed,
-    compact,
-    trimmed.toLowerCase(),
-    trimmed.toUpperCase(),
-    titleCase,
-    ...strippedPrefixCandidates,
-    ...aliasCandidates,
-  ].filter(Boolean);
-
-  return Array.from(new Set(candidates));
+  return buildRankDiscoveryNameVariants(playerName, [], {
+    includeSearchAliases: false,
+    includeDeepSearchAliases: false,
+  });
 }
 
 function mapPlatform(platformLabel: string) {

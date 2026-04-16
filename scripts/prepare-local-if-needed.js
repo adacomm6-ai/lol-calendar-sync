@@ -5,7 +5,13 @@ const { spawnSync } = require('child_process');
 
 const projectRoot = path.resolve(__dirname, '..');
 const schemaPath = path.join(projectRoot, 'prisma', 'schema.local.prisma');
-const migrateScriptPath = path.join(projectRoot, 'scripts', 'migrate-local-player-model.js');
+const workspaceRootDbPath = path.resolve(projectRoot, '..', '..', 'prisma', 'dev.db');
+const preferredDbPath = projectRoot.includes('__recovery_work__') ? workspaceRootDbPath : path.join(projectRoot, 'prisma', 'dev.db');
+const localDatabaseUrl = `file:${preferredDbPath.replace(/\\/g, '/')}`;
+const migrateScriptPaths = [
+    path.join(projectRoot, 'scripts', 'migrate-local-player-model.js'),
+    path.join(projectRoot, 'scripts', 'migrate-local-manual-review-data.js'),
+];
 const generatedSchemaPath = path.join(projectRoot, 'node_modules', '.prisma', 'client', 'schema.prisma');
 const stateDir = path.join(projectRoot, '.cache');
 const statePath = path.join(stateDir, 'prepare-local-state.json');
@@ -17,7 +23,8 @@ function readText(filePath) {
 function calcFingerprint() {
     const hash = crypto.createHash('sha256');
     hash.update(readText(schemaPath));
-    if (fs.existsSync(migrateScriptPath)) {
+    for (const migrateScriptPath of migrateScriptPaths) {
+        if (!fs.existsSync(migrateScriptPath)) continue;
         hash.update('\n---migrate-script---\n');
         hash.update(readText(migrateScriptPath));
     }
@@ -65,7 +72,7 @@ function runNode(args) {
         env: {
             ...process.env,
             APP_DB_TARGET: 'local',
-            DATABASE_URL: process.env.DATABASE_URL || 'file:./prisma/dev.db',
+            DATABASE_URL: process.env.DATABASE_URL || localDatabaseUrl,
         },
     });
     return result.status === 0;
@@ -75,6 +82,7 @@ function runPrepareLocalForce() {
     if (!runNode(['scripts/migrate-local-player-model.js'])) return false;
     if (!runNode(['node_modules/prisma/build/index.js', 'generate', '--schema', 'prisma/schema.local.prisma'])) return false;
     if (!runNode(['node_modules/prisma/build/index.js', 'db', 'push', '--schema', 'prisma/schema.local.prisma', '--skip-generate'])) return false;
+    if (!runNode(['scripts/migrate-local-manual-review-data.js'])) return false;
     return true;
 }
 
